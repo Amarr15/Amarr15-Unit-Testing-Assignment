@@ -755,4 +755,67 @@ public class BookingServiceTests
                 .WithMessage("Driver must be at least 21");
         }
     }
+
+    // --- BR-28: StartRental Tests ---
+
+    [Fact]
+    [Trait("Rule", "BR-28")]
+    public void StartRental_MoreThanOneHourBeforePickup_ThrowsInvalidBookingStateException()
+    {
+        var pickup = FixedNow.AddMinutes(65); // 65 min from now -> earlier than pickup - 1 hour (5 min too early)
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Reserved,
+            PickupAt = pickup
+        };
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+        var sut = CreateSut(bookings: fakeBookings);
+
+        var act = () => sut.StartRental(1);
+
+        act.Should().Throw<InvalidBookingStateException>()
+            .WithMessage("Too early to start this rental");
+    }
+
+    [Fact]
+    [Trait("Rule", "BR-28")]
+    public void StartRental_WithinOneHourOfPickup_StartsRentalSuccessfully()
+    {
+        var pickup = FixedNow.AddMinutes(45); // within 1 hour of pickup
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Reserved,
+            PickupAt = pickup
+        };
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+        var sut = CreateSut(bookings: fakeBookings);
+
+        sut.StartRental(1);
+
+        booking.Status.Should().Be(BookingStatus.Active);
+    }
+
+    [Fact]
+    [Trait("Rule", "BR-28")]
+    public void StartRental_NonReservedBooking_ThrowsInvalidBookingStateException()
+    {
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Active,
+            PickupAt = FixedNow
+        };
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+        var sut = CreateSut(bookings: fakeBookings);
+
+        var act = () => sut.StartRental(1);
+
+        act.Should().Throw<InvalidBookingStateException>()
+            .WithMessage("Only reserved bookings can be started");
+    }
 }
