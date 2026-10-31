@@ -6,21 +6,26 @@ namespace DriveNow.Application.Services;
 
 public class ReceiptService
 {
-    readonly ILineItemFactory _lineItems;
-    readonly ITaxCalculator _tax;
-    readonly ICurrencyFormatter _currency;
-    readonly IReceiptFormatter _receipts;
+    readonly LineItemFactory _lineItems;
+    readonly TaxCalculator _tax;
+    readonly CurrencyFormatter _currency;
+    readonly ReceiptFormatter _receipts;
 
     public ReceiptService(
-        ILineItemFactory lineItems,
-        ITaxCalculator tax,
-        ICurrencyFormatter currency,
-        IReceiptFormatter receipts)
+        LineItemFactory lineItems,
+        TaxCalculator tax,
+        CurrencyFormatter currency,
+        ReceiptFormatter receipts)
     {
         _lineItems = lineItems;
         _tax = tax;
         _currency = currency;
         _receipts = receipts;
+    }
+
+    public ReceiptService()
+        : this(new LineItemFactory(), new TaxCalculator(), new CurrencyFormatter(), new ReceiptFormatter())
+    {
     }
 
     public string Build(Booking booking, ReturnReport? report)
@@ -35,15 +40,19 @@ public class ReceiptService
         }
 
         var total = net + vat;
+        var formattedItems = new List<(string Description, string FormattedAmount)>();
         var width = 0;
         foreach (var item in items)
-            width = Math.Max(width, _currency.Format(item.Amount).Length);
+        {
+            var formatted = _currency.Format(item.Amount);
+            formattedItems.Add((item.Description, formatted));
+            width = Math.Max(width, formatted.Length);
+        }
 
         var lines = new List<string>();
-        foreach (var item in items)
+        foreach (var (description, formattedAmount) in formattedItems)
         {
-            var amount = _currency.Format(item.Amount);
-            lines.Add(item.Description.PadRight(30, '.') + amount.PadLeft(width));
+            lines.Add(description.PadRight(30, '.') + formattedAmount.PadLeft(width));
         }
 
         lines.Add("VAT 14%".PadRight(30, '.') + _currency.Format(vat).PadLeft(width));

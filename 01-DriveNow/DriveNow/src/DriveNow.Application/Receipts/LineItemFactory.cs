@@ -3,7 +3,7 @@ using DriveNow.Domain.ValueObjects;
 
 namespace DriveNow.Application.Receipts;
 
-public class LineItemFactory : ILineItemFactory
+public class LineItemFactory
 {
     public List<LineItem> Create(Booking booking, ReturnReport? report)
     {
