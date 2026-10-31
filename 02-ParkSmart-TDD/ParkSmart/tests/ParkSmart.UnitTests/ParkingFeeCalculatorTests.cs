@@ -26,4 +26,22 @@ public class ParkingFeeCalculatorTests
 
         fee.Should().Be(0m);
     }
+
+    [Theory]
+    [InlineData(16)]
+    [InlineData(60)]
+    public void Calculate_BetweenSixteenAndSixtyMinutes_ChargesTenEgp(int minutes)
+    {
+        var entry = new DateTime(2026, 11, 1, 10, 0, 0);
+        var session = new ParkingSession
+        {
+            EntryTime = entry,
+            ExitTime = entry.AddMinutes(minutes),
+            Vehicle = VehicleType.Car
+        };
+
+        var fee = _sut.Calculate(session);
+
+        fee.Should().Be(10m);
+    }
 }
