@@ -13,9 +13,12 @@ public class ParkingFeeCalculator
         if (duration.TotalMinutes <= 15)
             return 0m;
 
-        return StartedHours(duration) * 10m;
-    }
+        var fullDays = (int)(duration.TotalHours / 24);
+        var remainingMinutes = duration.TotalMinutes - (fullDays * 24 * 60);
 
-    private static int StartedHours(TimeSpan duration) =>
-        (int)Math.Ceiling(duration.TotalMinutes / 60.0);
+        var remainingHours = (int)Math.Ceiling(remainingMinutes / 60.0);
+        var remainingFee = Math.Min(remainingHours * 10m, 80m);
+
+        return (fullDays * 80m) + remainingFee;
+    }
 }
