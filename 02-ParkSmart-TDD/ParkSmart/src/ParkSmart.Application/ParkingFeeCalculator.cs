@@ -24,12 +24,7 @@ public class ParkingFeeCalculator
             : normalFee;
 
         if (session.IsSubscriber)
-        {
-            if (IsSubscriberFreeWindow(session.EntryTime, session.ExitTime))
-                fee = 0m;
-            else
-                fee = Math.Round(fee * 0.50m, 2, MidpointRounding.AwayFromZero);
-        }
+            fee = ApplySubscriberDiscount(fee, session.EntryTime, session.ExitTime);
 
         if (session.TicketLost)
             fee = Math.Max(fee, lostTicketMin);
@@ -54,6 +49,14 @@ public class ParkingFeeCalculator
         var remainingFee = Math.Min(remainingHours * hourlyRate, dailyCap);
 
         return (fullDays * dailyCap) + remainingFee;
+    }
+
+    private static decimal ApplySubscriberDiscount(decimal fee, DateTime entry, DateTime exit)
+    {
+        if (IsSubscriberFreeWindow(entry, exit))
+            return 0m;
+
+        return Math.Round(fee * 0.50m, 2, MidpointRounding.AwayFromZero);
     }
 
     private static bool IsNightWindow(DateTime entry, DateTime exit)
