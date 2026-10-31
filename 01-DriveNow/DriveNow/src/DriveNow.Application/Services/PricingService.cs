@@ -27,7 +27,7 @@ public class PricingService
         var age = RentalMathService.CalculateAge(customer.DateOfBirth, request.PickupAt);
         var young = age is >= 21 and <= 24 ? Round(baseAmount * 0.15m) : 0m;
 
-        var durationPercent = days >= 14 ? 15m : days > 7 && days < 14 ? 10m : 0m;
+        var durationPercent = days >= 14 ? 15m : days >= 7 && days < 14 ? 10m : 0m;
         var loyaltyPercent = customer.LoyaltyTier switch
         {
             LoyaltyTier.Silver => 5m,
