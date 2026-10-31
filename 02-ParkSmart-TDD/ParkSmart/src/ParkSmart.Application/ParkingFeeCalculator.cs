@@ -10,7 +10,10 @@ public class ParkingFeeCalculator
             throw new ArgumentException("Exit time must be after entry time");
 
         var duration = session.ExitTime - session.EntryTime;
-        if (!session.TicketLost && duration.TotalMinutes <= 15)
+        var isFriday = session.EntryTime.DayOfWeek == DayOfWeek.Friday;
+        var freeMinutes = isFriday ? 120 : 15;
+
+        if (!session.TicketLost && duration.TotalMinutes <= freeMinutes)
             return 0m;
 
         var (hourlyRate, dailyCap, nightFlatRate, lostTicketMin) = GetVehicleRates(session.Vehicle);
