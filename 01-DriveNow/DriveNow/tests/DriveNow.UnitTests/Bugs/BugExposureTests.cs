@@ -114,4 +114,60 @@ public class BugExposureTests
         // BR-39: Only Gold and Platinum get first driver free. Silver should pay full.
         result.AdditionalDriversCost.Should().Be(100m); // 1 driver * 100 * 1 day
     }
+
+    // BUG 5: BR-21 - Overlap check uses <= and >= instead of < and >
+    [Fact]
+    [Trait("Rule", "BR-21")]
+    public void CreateBooking_BackToBackRental_ShouldBeAllowed()
+    {
+        var existingReturn = FixedNow.AddDays(3);
+        var customer = new CustomerFaker()
+            .WithAge(30, FixedNow).WithLicenseYears(5, FixedNow)
+            .WithTier(LoyaltyTier.None).Generate();
+        customer.IsBlacklisted = false;
+        var vehicle = new VehicleFaker().WithCategory(VehicleCategory.Economy).Generate();
+        vehicle.IsAvailable = true;
+
+        var existingBooking = new Booking
+        {
+            Id = 99,
+            CustomerId = customer.Id + 1,
+            VehicleId = vehicle.Id,
+            PickupAt = FixedNow,
+            ReturnAt = existingReturn,
+            Status = BookingStatus.Reserved
+        };
+
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(existingBooking);
+
+        var promoRepo = new FakePromoCodeRepository();
+        var pricing = new PricingService(promoRepo, _timeProvider);
+        var sut = new BookingService(
+            new StubCustomerRepository(customer),
+            new StubVehicleRepository(vehicle),
+            fakeBookings, promoRepo, pricing,
+            new MockPaymentGateway(),
+            new SpySmsSender(),
+            new DummyEmailSender(),
+            new DummyAuditLog(),
+            _timeProvider,
+            new FixedReferenceGenerator());
+
+        // New booking starts exactly when existing ends (back-to-back)
+        var request = new BookingRequest
+        {
+            CustomerId = customer.Id,
+            VehicleId = vehicle.Id,
+            PickupAt = existingReturn, // pickup == existing return
+            ReturnAt = existingReturn.AddDays(2),
+            InsurancePlan = InsurancePlan.Basic,
+            AdditionalDrivers = 0
+        };
+
+        var act = () => sut.CreateBooking(request);
+
+        // BR-21: Back-to-back (pickup == existing return) should be allowed
+        act.Should().NotThrow();
+    }
 }
