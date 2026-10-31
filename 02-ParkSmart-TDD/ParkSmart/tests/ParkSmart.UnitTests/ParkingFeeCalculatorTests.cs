@@ -139,4 +139,26 @@ public class ParkingFeeCalculatorTests
 
         fee.Should().Be(expectedFee);
     }
+
+    [Theory]
+    [InlineData(VehicleType.Car, 0, 5, 150)]
+    [InlineData(VehicleType.Car, 30, 0, 150)]
+    [InlineData(VehicleType.Truck, 30, 0, 350)]
+    [InlineData(VehicleType.Motorcycle, 0, 5, 75)]
+    public void Calculate_TicketLost_AppliesMinimumFeeAndBypassesFreePeriod(
+        VehicleType vehicle, int hours, int minutes, decimal expectedFee)
+    {
+        var entry = new DateTime(2026, 11, 1, 10, 0, 0);
+        var session = new ParkingSession
+        {
+            EntryTime = entry,
+            ExitTime = entry.AddHours(hours).AddMinutes(minutes),
+            Vehicle = vehicle,
+            TicketLost = true
+        };
+
+        var fee = _sut.Calculate(session);
+
+        fee.Should().Be(expectedFee);
+    }
 }
