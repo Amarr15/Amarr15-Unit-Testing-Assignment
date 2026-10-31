@@ -137,3 +137,49 @@ The AI accurately caught missing negative tests for license age (BR-13), luxury 
 ---
 
 ## Feature: Pickups, Returns, and Cancellations (Task 7)
+
+### 1. My Tests (Self-Assessment)
+
+| Business Rule | Test Name | Scenarios Covered | Expected Behavior |
+|---|---|---|---|
+| **BR-28** (Pickup window & state) | `StartRental_MoreThanOneHourBeforePickup_ThrowsInvalidBookingStateException`<br>`StartRental_WithinOneHourOfPickup_StartsRentalSuccessfully`<br>`StartRental_NonReservedBooking_ThrowsInvalidBookingStateException` | Too early (> 1h before pickup); valid pickup window (45 min before); non-reserved booking | Rejects early start; sets status to Active; rejects non-reserved. |
+| **BR-41** (Late return fee) | `ProcessReturn_LateWithinGracePeriod_ChargesNoLateFee`<br>`ProcessReturn_LateBetweenOneAndFourHours_ChargesHourlyRate`<br>`ProcessReturn_LateOverFourHours_ChargesFullDailyRatePerPeriod` | 0m, 59m (grace period); 60m, 61m, 180m (10% daily rate/hr); 241m, 1440m, 1441m (daily rate/24h period) | 0 EGP for grace; 10% per started hour; full daily rate per started 24h. |
+| **BR-42** (Mileage / distance fee) | `ProcessReturn_ExtraMileageDriven_CalculatesDistanceFee` | Within 250 km/day allowance; excess on Economy (0.75 EGP/km); excess on Luxury (1.50 EGP/km) | 0 EGP if within allowance; correct rate per extra km. |
+| **BR-43** (Fuel missing quarters fee) | `ProcessReturn_MissingFuelQuarters_CalculatesFuelFee` | Full fuel (4/4); 2 missing quarters on Economy (200 EGP/qtr); 3 missing quarters on SUV (300 EGP/qtr) | 0 EGP; 400 EGP; 900 EGP. |
+| **BR-44** (Damage capped at deductible) | `ProcessReturn_ReportedDamage_CapsChargeAtInsuranceDeductible` | Basic under deductible; Basic over 10k deductible; Standard over 3k deductible; Premium (0 deductible) | Charges reported damage capped at deductible per plan. |
+| **BR-46** (Return input validations) | `ProcessReturn_EndMileageBelowStart_ThrowsArgumentException`<br>`ProcessReturn_InvalidFuelQuarters_ThrowsArgumentException` | End mileage < start mileage; fuel quarters > 4 | Throws ArgumentException with descriptive error messages. |
+| **BR-50** (Cancellation eligibility) | `Cancel_PickupAlreadyPassed_ThrowsInvalidBookingStateException`<br>`Cancel_NonReservedBooking_ThrowsInvalidBookingStateException` | Pickup already passed in time; booking already Active | Throws InvalidBookingStateException. |
+| **BR-51** (Cancellation fee tiers) | `Cancel_NoticeMoreThanFortyEightHours_ChargesZeroFee`<br>`Cancel_NoticeBetweenTwentyFourAndFortyEightHours_ChargesFiftyPercentFee`<br>`Cancel_NoticeUnderTwentyFourHours_ChargesFullDailyRate`<br>`Cancel_PlatinumCustomerAnyNotice_NeverChargesFee` | > 48h notice (0 fee); 24h..48h notice (50%); < 24h notice (100%); Platinum customer (always 0 fee) | Charges correct fee percentage; Platinum always exempt. |
+| **BR-52** (Fee vs deposit settlement) | `Cancel_FeeExceedsDeposit_ChargesDifferenceViaGateway` | Cancellation fee (1000 EGP) > deposit (400 EGP) | Charges remaining difference (600 EGP) via IPaymentGateway. |
+
+**Verdict**:
+Covered core operational lifecycle rules: starting rentals within the allowed 1-hour window, return calculations (grace period, hourly late fee, daily late fee, mileage overage, fuel quarters, damage caps), cancellation fees across notice tiers, and payment gateway charge on deficit.
+
+---
+
+### 2. AI Review & Decisions (Steps 3 & 4)
+
+Prompt submitted with BR-28, BR-41 to BR-46, BR-50 to BR-53 and test names only (see `screenshots/ai-operations.png`).
+
+| AI Suggestion | Status | Why |
+|---|---|---|
+| Add test for return deposit refund & extra charges reconciliation (BR-45). | **Accepted** | Valid gap; added `ProcessReturn_DepositAndExtras_ChargesExtrasAndRefundsDeposit`. |
+| Add test for successful return state changes & mileage update (BR-46). | **Accepted** | Valid gap; added `ProcessReturn_Completed_SetsBookingStatusCompletedAndUpdatesMileage`. |
+| Add test for deposit refund on cancellation when deposit > fee (BR-52). | **Accepted** | Valid gap; added `Cancel_DepositExceedsFee_RefundsDifferenceViaGateway`. |
+| Add test for promo code usage decrement on cancellation (BR-53). | **Accepted** | Valid gap; added `Cancel_WithPromoCode_DecrementsPromoUsedCount`. |
+| Add test for notifications (SMS/Email) and audit logging on cancellation (BR-53). | **Accepted** | Valid gap; added `Cancel_ValidBooking_SendsNotificationsAndWritesAuditLog`. |
+| Add test for exact start rental time boundary: `pickup - 1 hour` (BR-28). | **Accepted** | Good boundary case; added `StartRental_ExactlyOneHourBeforePickup_StartsRentalSuccessfully`. |
+| Add test for exact cancellation time boundary: `now == pickup` (BR-50). | **Accepted** | Good boundary case; added `Cancel_AtPickupTime_ThrowsInvalidBookingStateException`. |
+| Add test for exact distance allowance boundary: `driven == 250 * days` (BR-42). | **Accepted** | Good boundary case; added `ProcessReturn_ExactlyAtAllowedMileage_ChargesZeroDistanceFee`. |
+| Add test for zero damage reported (BR-44). | **Accepted** | Good edge case; added `ProcessReturn_ZeroDamageReported_ChargesZeroDamage`. |
+| Add test for exact 240-minute late fee boundary (BR-41). | **Rejected** (Deferred to Task 10) | Testing at exactly 240m fails against starter code because `ReturnService.cs` line 125 uses `>= 240` instead of `> 240`, prematurely charging full daily period. This is an existing bug that will be exposed in Task 10. |
+| Add test for exact 48-hour notice cancellation fee boundary (BR-51). | **Rejected** (Deferred to Task 10) | Testing at exactly 48h notice fails against starter code because `CancellationService.cs` line 60 uses `> 48` instead of `>= 48`, erroneously charging a 50% fee. This bug will be exposed in Task 10. |
+| Consolidate cancellation notice tests into a parameterized matrix. | **Rejected** | Keeping distinct, focused tests for each fee tier makes test reporting and failure diagnostics much cleaner and directly traceable to specific business rule clauses. |
+
+---
+
+### 3. Judge the AI (Step 5)
+
+The AI provided a very sharp and comprehensive review. It correctly spotted that we were missing side-effect tests on return and cancellation (updating booking status, promo code decrement, notifications, and deposit refunds under BR-45, BR-52, and BR-53). It also suggested several valuable boundary tests (such as exactly 1 hour before pickup for starting rental, exact allowed mileage, and cancellation right at pickup time). However, its suggestions to test exact boundaries for 240 minutes late fee and 48 hours cancellation notice uncovered pre-existing bugs in the starter code, which we rightly deferred to Task 10 so as not to break the starter codebase before the designated bug-fixing phase.
+
+

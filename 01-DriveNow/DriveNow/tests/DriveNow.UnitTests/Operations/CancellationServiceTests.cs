@@ -8,6 +8,7 @@ using DriveNow.Domain.Interfaces;
 using DriveNow.UnitTests.Fakers;
 using DriveNow.UnitTests.TestDoubles;
 using FluentAssertions;
+using Moq;
 using Xunit;
 
 namespace DriveNow.UnitTests.Operations;
@@ -232,5 +233,131 @@ public class CancellationServiceTests
 
         fee.Should().Be(1000m);
         mockPayment.VerifyCharged(customer.Id, 600m);
+    }
+
+    // BR-50: Cancellation at exact pickup time
+    [Fact]
+    [Trait("Rule", "BR-50")]
+    public void Cancel_AtPickupTime_ThrowsInvalidBookingStateException()
+    {
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Reserved,
+            PickupAt = FixedNow // now == pickup
+        };
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+        var sut = CreateSut(bookings: fakeBookings);
+
+        var act = () => sut.Cancel(1);
+
+        act.Should().Throw<InvalidBookingStateException>()
+            .WithMessage("Booking has already started");
+    }
+
+    // BR-52: Deposit exceeds cancellation fee -> refunds difference
+    [Fact]
+    [Trait("Rule", "BR-52")]
+    public void Cancel_DepositExceedsFee_RefundsDifferenceViaGateway()
+    {
+        var mockPayment = new MockPaymentGateway();
+        var pickup = FixedNow.AddHours(25); // notice between 24 and 48h -> 50% fee = 300
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Reserved,
+            PickupAt = pickup,
+            Deposit = 1000m // deposit 1000 > fee 300 -> refund 700
+        };
+        var vehicle = new VehicleFaker().WithDailyRate(600m).Generate();
+        var customer = new CustomerFaker().WithTier(LoyaltyTier.None).Generate();
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+
+        var sut = CreateSut(
+            bookings: fakeBookings,
+            vehicles: new StubVehicleRepository(vehicle),
+            customers: new StubCustomerRepository(customer),
+            payments: mockPayment);
+
+        var fee = sut.Cancel(1);
+
+        fee.Should().Be(300m);
+        mockPayment.VerifyRefunded(customer.Id, 700m);
+    }
+
+    // BR-53: Promo code used count decremented
+    [Fact]
+    [Trait("Rule", "BR-53")]
+    public void Cancel_WithPromoCode_DecrementsPromoUsedCount()
+    {
+        var pickup = FixedNow.AddHours(50);
+        var promo = new PromoCode
+        {
+            Code = "SAVE20",
+            DiscountPercent = 20,
+            UsedCount = 5,
+            MaxUses = 10,
+            ValidFrom = FixedNow.AddDays(-1),
+            ValidUntil = FixedNow.AddDays(10)
+        };
+        var fakePromos = new FakePromoCodeRepository(promo);
+
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Reserved,
+            PickupAt = pickup,
+            PromoCode = "SAVE20",
+            Deposit = 1000m
+        };
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+
+        var sut = CreateSut(
+            bookings: fakeBookings,
+            promos: fakePromos);
+
+        sut.Cancel(1);
+
+        promo.UsedCount.Should().Be(4);
+    }
+
+    // BR-53: Notifications and Audit Log dispatched
+    [Fact]
+    [Trait("Rule", "BR-53")]
+    public void Cancel_ValidBooking_SendsNotificationsAndWritesAuditLog()
+    {
+        var smsMock = new Mock<ISmsSender>();
+        var emailMock = new Mock<IEmailSender>();
+        var auditMock = new Mock<IAuditLog>();
+
+        var pickup = FixedNow.AddHours(50);
+        var booking = new Booking
+        {
+            Id = 1,
+            Reference = "DN-20261101-ABCD",
+            Status = BookingStatus.Reserved,
+            PickupAt = pickup,
+            Deposit = 1000m
+        };
+        var customer = new CustomerFaker().Generate();
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+
+        var sut = CreateSut(
+            bookings: fakeBookings,
+            customers: new StubCustomerRepository(customer),
+            sms: smsMock.Object,
+            email: emailMock.Object,
+            auditLog: auditMock.Object);
+
+        sut.Cancel(1);
+
+        var expectedMsg = "Booking DN-20261101-ABCD cancelled";
+        smsMock.Verify(s => s.Send(customer.Phone, expectedMsg), Times.Once);
+        emailMock.Verify(e => e.Send(customer.Email, expectedMsg, expectedMsg), Times.Once);
+        auditMock.Verify(a => a.Write(expectedMsg), Times.Once);
     }
 }

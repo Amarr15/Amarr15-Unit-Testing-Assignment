@@ -228,6 +228,128 @@ public class ReturnServiceTests
         report.DamageCharge.Should().Be(expectedCharge);
     }
 
+    // BR-42: Exactly at allowed mileage threshold
+    [Fact]
+    [Trait("Rule", "BR-42")]
+    public void ProcessReturn_ExactlyAtAllowedMileage_ChargesZeroDistanceFee()
+    {
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Active,
+            ReturnAt = FixedNow,
+            StartMileage = 1000,
+            Price = new PriceBreakdown { RentalDays = 2 } // 2 days * 250 = 500 km allowed
+        };
+        var vehicle = new VehicleFaker().WithCategory(VehicleCategory.Economy).Generate();
+        var customer = new CustomerFaker().Generate();
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+
+        var sut = CreateSut(
+            bookings: fakeBookings,
+            vehicles: new StubVehicleRepository(vehicle),
+            customers: new StubCustomerRepository(customer));
+
+        var report = sut.ProcessReturn(1, 1500, 4, 0); // exactly 500 km driven
+
+        report.MileageFee.Should().Be(0m);
+    }
+
+    // BR-44: Zero damage reported
+    [Fact]
+    [Trait("Rule", "BR-44")]
+    public void ProcessReturn_ZeroDamageReported_ChargesZeroDamage()
+    {
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Active,
+            ReturnAt = FixedNow,
+            InsurancePlan = InsurancePlan.Basic,
+            StartMileage = 1000,
+            Price = new PriceBreakdown { RentalDays = 1 }
+        };
+        var vehicle = new VehicleFaker().Generate();
+        var customer = new CustomerFaker().Generate();
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+
+        var sut = CreateSut(
+            bookings: fakeBookings,
+            vehicles: new StubVehicleRepository(vehicle),
+            customers: new StubCustomerRepository(customer));
+
+        var report = sut.ProcessReturn(1, 1000, 4, 0);
+
+        report.DamageCharge.Should().Be(0m);
+    }
+
+    // BR-45 & BR-46: Completion state & Deposit refund/charge
+    [Fact]
+    [Trait("Rule", "BR-46")]
+    public void ProcessReturn_Completed_SetsBookingStatusCompletedAndUpdatesMileage()
+    {
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Active,
+            ReturnAt = FixedNow,
+            StartMileage = 1000,
+            Price = new PriceBreakdown { RentalDays = 1 }
+        };
+        var vehicle = new VehicleFaker().Generate();
+        vehicle.Mileage = 1000;
+        var customer = new CustomerFaker().Generate();
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+
+        var sut = CreateSut(
+            bookings: fakeBookings,
+            vehicles: new StubVehicleRepository(vehicle),
+            customers: new StubCustomerRepository(customer));
+
+        sut.ProcessReturn(1, 1200, 4, 0);
+
+        booking.Status.Should().Be(BookingStatus.Completed);
+        booking.EndMileage.Should().Be(1200);
+        vehicle.Mileage.Should().Be(1200);
+    }
+
+    [Fact]
+    [Trait("Rule", "BR-45")]
+    public void ProcessReturn_DepositAndExtras_ChargesExtrasAndRefundsDeposit()
+    {
+        var mockPayment = new MockPaymentGateway();
+        var booking = new Booking
+        {
+            Id = 1,
+            Reference = "DN-20261105-ABCD",
+            Status = BookingStatus.Active,
+            ReturnAt = FixedNow,
+            StartMileage = 1000,
+            Deposit = 1000m,
+            Price = new PriceBreakdown { RentalDays = 1 }
+        };
+        var vehicle = new VehicleFaker().WithCategory(VehicleCategory.Economy).Generate();
+        var customer = new CustomerFaker().Generate();
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+
+        var sut = CreateSut(
+            bookings: fakeBookings,
+            vehicles: new StubVehicleRepository(vehicle),
+            customers: new StubCustomerRepository(customer),
+            payments: mockPayment);
+
+        // fuelQuarters = 2 -> 2 missing quarters * 200 = 400 EGP extra
+        var report = sut.ProcessReturn(1, 1000, 2, 0);
+
+        report.TotalExtra.Should().Be(400m);
+        mockPayment.VerifyCharged(customer.Id, 400m);
+        mockPayment.VerifyRefunded(customer.Id, 1000m);
+    }
+
     // State validations
     [Fact]
     [Trait("Rule", "BR-46")]

@@ -76,8 +76,25 @@ public class MockPaymentGateway : IPaymentGateway
         return "MOCK-PAY-1234";
     }
 
+    public int RefundCallCount { get; private set; }
+    public decimal? LastAmountRefunded { get; private set; }
+    public int? LastRefundCustomerId { get; private set; }
+
     public void Refund(int customerId, decimal amount, string description)
     {
+        RefundCallCount++;
+        LastRefundCustomerId = customerId;
+        LastAmountRefunded = amount;
+    }
+
+    public void VerifyRefunded(int customerId, decimal expectedAmount)
+    {
+        if (RefundCallCount != 1)
+            throw new InvalidOperationException($"Expected Refund to be called once, but called {RefundCallCount} times.");
+        if (LastRefundCustomerId != customerId)
+            throw new InvalidOperationException($"Expected CustomerId {customerId}, but was {LastRefundCustomerId}.");
+        if (LastAmountRefunded != expectedAmount)
+            throw new InvalidOperationException($"Expected Amount {expectedAmount}, but was {LastAmountRefunded}.");
     }
 
     public void VerifyCharged(int customerId, decimal expectedAmount)

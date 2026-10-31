@@ -781,6 +781,26 @@ public class BookingServiceTests
 
     [Fact]
     [Trait("Rule", "BR-28")]
+    public void StartRental_ExactlyOneHourBeforePickup_StartsRentalSuccessfully()
+    {
+        var pickup = FixedNow.AddMinutes(60); // exactly 1 hour from now
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Reserved,
+            PickupAt = pickup
+        };
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+        var sut = CreateSut(bookings: fakeBookings);
+
+        sut.StartRental(1);
+
+        booking.Status.Should().Be(BookingStatus.Active);
+    }
+
+    [Fact]
+    [Trait("Rule", "BR-28")]
     public void StartRental_WithinOneHourOfPickup_StartsRentalSuccessfully()
     {
         var pickup = FixedNow.AddMinutes(45); // within 1 hour of pickup
