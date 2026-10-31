@@ -9,25 +9,32 @@ public class ParkingFeeCalculator
         if (session.ExitTime < session.EntryTime)
             throw new ArgumentException("Exit time must be after entry time");
 
+        if (session.ChargedKwh < 0)
+            throw new ArgumentException("Charged kWh cannot be negative");
+
         var duration = session.ExitTime - session.EntryTime;
         var isFriday = session.EntryTime.DayOfWeek == DayOfWeek.Friday;
         var freeMinutes = isFriday ? 120 : 15;
 
-        if (!session.TicketLost && duration.TotalMinutes <= freeMinutes)
-            return 0m;
+        decimal fee = 0m;
+        if (session.TicketLost || duration.TotalMinutes > freeMinutes)
+        {
+            var (hourlyRate, dailyCap, nightFlatRate, lostTicketMin) = GetVehicleRates(session.Vehicle);
+            var normalFee = CalculateNormalFee(duration, hourlyRate, dailyCap);
 
-        var (hourlyRate, dailyCap, nightFlatRate, lostTicketMin) = GetVehicleRates(session.Vehicle);
-        var normalFee = CalculateNormalFee(duration, hourlyRate, dailyCap);
+            fee = IsNightWindow(session.EntryTime, session.ExitTime)
+                ? Math.Min(normalFee, nightFlatRate)
+                : normalFee;
 
-        var fee = IsNightWindow(session.EntryTime, session.ExitTime)
-            ? Math.Min(normalFee, nightFlatRate)
-            : normalFee;
+            if (session.IsSubscriber)
+                fee = ApplySubscriberDiscount(fee, session.EntryTime, session.ExitTime);
 
-        if (session.IsSubscriber)
-            fee = ApplySubscriberDiscount(fee, session.EntryTime, session.ExitTime);
+            if (session.TicketLost)
+                fee = Math.Max(fee, lostTicketMin);
+        }
 
-        if (session.TicketLost)
-            fee = Math.Max(fee, lostTicketMin);
+        if (session.ChargedKwh > 0)
+            fee += Math.Round(session.ChargedKwh * 3.50m, 2, MidpointRounding.AwayFromZero);
 
         return fee;
     }
