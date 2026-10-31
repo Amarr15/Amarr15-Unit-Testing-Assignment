@@ -322,4 +322,54 @@ public class PricingServiceTests
 
         await Verify(breakdown);
     }
+
+    // BR-35 & BR-36: Valid promo code with case-insensitivity
+    [Theory]
+    [InlineData("SAVE15", 150)]
+    [InlineData("save15", 150)]
+    [Trait("Rule", "BR-35")]
+    [Trait("Rule", "BR-36")]
+    public void Calculate_ValidPromoCodeCaseInsensitive_AppliesCorrectDiscount(string promoCode, decimal expectedDiscount)
+    {
+        var sut = CreateSut();
+        var customer = new CustomerFaker().Generate();
+        var vehicle = new VehicleFaker().WithDailyRate(1000m).Generate();
+        var pickup = FixedToday.AddDays(1);
+        var request = new BookingRequest
+        {
+            PickupAt = pickup,
+            ReturnAt = pickup.AddDays(1),
+            PromoCode = promoCode,
+            InsurancePlan = InsurancePlan.Basic,
+            AdditionalDrivers = 0
+        };
+
+        var result = sut.Calculate(customer, vehicle, request);
+
+        result.PromoDiscount.Should().Be(expectedDiscount);
+    }
+
+    // BR-37: Duration (15%) + Loyalty (15%) capped at 25% total
+    [Fact]
+    [Trait("Rule", "BR-37")]
+    public void Calculate_CombinedDiscountsExceedCap_CapsTotalDiscountAtTwentyFivePercent()
+    {
+        var sut = CreateSut();
+        var customer = new CustomerFaker().WithTier(LoyaltyTier.Platinum).Generate();
+        var vehicle = new VehicleFaker().WithDailyRate(1000m).Generate();
+        var pickup = FixedToday.AddDays(1);
+        var request = new BookingRequest
+        {
+            PickupAt = pickup,
+            ReturnAt = pickup.AddDays(14),
+            InsurancePlan = InsurancePlan.Basic,
+            AdditionalDrivers = 0
+        };
+
+        var result = sut.Calculate(customer, vehicle, request);
+
+        result.DurationDiscount.Should().Be(2100m);
+        result.LoyaltyDiscount.Should().Be(1400m);
+        (result.DurationDiscount + result.LoyaltyDiscount).Should().Be(3500m);
+    }
 }

@@ -72,13 +72,20 @@ I covered the main business rules, individual boundaries, and full Worked Exampl
 
 ### 2. AI Review & Decisions (Steps 3 & 4)
 
-_(To be filled after AI review)_
+Prompt submitted with BR-30 to BR-40 and test names only (see `screenshots/ai-pricing.png`).
+
+| AI Suggestion | Status | Why |
+|---|---|---|
+| Add tests for valid promo code application and case-insensitivity (BR-35 / BR-36). | **Accepted** | Valid gap; I previously only tested invalid promo codes throwing exceptions, but never verified that valid uppercase/lowercase codes apply the right discount. |
+| Add a test for the 25% discount cap rule (BR-37). | **Accepted** | Added `Calculate_CombinedDiscountsExceedCap_CapsTotalDiscountAtTwentyFivePercent` to verify that when Duration (15%) + Loyalty (15%) exceed 25%, the total is capped at 25%. |
+| Add tests for day 7 duration discount boundary (BR-33). | **Rejected** (Deferred to Task 10) | Production code has a bug (`days > 7` instead of `>= 7`). Per assignment rules, bugs are exposed in Task 10. |
+| Remove one of the Worked Example A tests due to redundancy. | **Rejected** | The assignment specification explicitly requires both `[MemberData]` full breakdown comparison (R2/R5) and Verify snapshot (R6) for Example A. |
 
 ---
 
 ### 3. Judge the AI (Step 5)
 
-_(To be filled after AI review)_
+The AI suggested that having both an explicit assertion test and a snapshot test for Worked Example A is redundant. While theoretically true in everyday development, in the context of this assignment, Requirement R2 explicitly demands `[MemberData]` testing the whole breakdown with `BeEquivalentTo`, and Requirement R6 explicitly demands a Verify snapshot of Example A. The AI also missed that testing the 7-day duration boundary currently fails against the starter code due to an existing bug. However, its suggestion to test case-insensitivity and valid promo code discounts was very helpful and immediately implemented.
 
 ---
 
