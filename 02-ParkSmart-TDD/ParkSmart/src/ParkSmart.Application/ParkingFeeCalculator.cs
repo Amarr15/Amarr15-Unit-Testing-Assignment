@@ -23,6 +23,14 @@ public class ParkingFeeCalculator
             ? Math.Min(normalFee, nightFlatRate)
             : normalFee;
 
+        if (session.IsSubscriber)
+        {
+            if (IsSubscriberFreeWindow(session.EntryTime, session.ExitTime))
+                fee = 0m;
+            else
+                fee = Math.Round(fee * 0.50m, 2, MidpointRounding.AwayFromZero);
+        }
+
         if (session.TicketLost)
             fee = Math.Max(fee, lostTicketMin);
 
@@ -55,5 +63,17 @@ public class ParkingFeeCalculator
 
         return exit.Date == entry.Date ||
                (exit.Date == entry.Date.AddDays(1) && exit.TimeOfDay <= TimeSpan.FromHours(8));
+    }
+
+    private static bool IsSubscriberFreeWindow(DateTime entry, DateTime exit)
+    {
+        if (entry.Date != exit.Date)
+            return false;
+
+        var isSunToThu = entry.DayOfWeek is DayOfWeek.Sunday or DayOfWeek.Monday or DayOfWeek.Tuesday or DayOfWeek.Wednesday or DayOfWeek.Thursday;
+        if (!isSunToThu)
+            return false;
+
+        return entry.TimeOfDay >= TimeSpan.FromHours(7) && exit.TimeOfDay <= TimeSpan.FromHours(19);
     }
 }
