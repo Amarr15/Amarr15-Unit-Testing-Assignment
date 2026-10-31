@@ -10,6 +10,7 @@ public class ParkingFeeCalculator
         if (duration.TotalMinutes <= 15)
             return 0m;
 
-        return 10m;
+        var startedHours = (int)Math.Ceiling(duration.TotalMinutes / 60.0);
+        return startedHours * 10m;
     }
 }
