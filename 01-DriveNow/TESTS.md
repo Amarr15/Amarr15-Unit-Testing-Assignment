@@ -117,13 +117,22 @@ I covered the essential business rules for customer/vehicle validation, date con
 
 ### 2. AI Review & Decisions (Steps 3 & 4)
 
-_(To be filled after AI review)_
+Prompt submitted with BR-10 to BR-27 and test names only (see `screenshots/ai-booking.png`).
+
+| AI Suggestion | Status | Why |
+|---|---|---|
+| Add test for license minimum duration < 1 year (BR-13). | **Accepted** | Valid gap; added `CreateBooking_LicenseUnderOneYear_ThrowsBookingRejectedException`. |
+| Add test for luxury vehicle category restrictions (BR-16). | **Accepted** | Valid gap; added `CreateBooking_LuxuryUnderAgeTwentyFive_ThrowsBookingRejectedException`. |
+| Add test for van category license restrictions (BR-17). | **Accepted** | Valid gap; added `CreateBooking_VanLicenseUnderTwoYears_ThrowsBookingRejectedException`. |
+| Add test for deposit halved with Premium insurance (BR-26). | **Accepted** | Valid gap; added `CreateBooking_PremiumInsurance_HalvesRequiredDeposit`. |
+| Add test for back-to-back rental boundary (BR-21). | **Rejected** (Deferred to Task 10) | Testing back-to-back rentals where `new.PickupAt == existing.ReturnAt` fails against starter code because line 67 uses `<=` instead of `<`. This is an existing bug that will be exposed in Task 10. Added non-overlapping test instead. |
+| Pointed out redundancy between hand-written Mock and Moq tests. | **Rejected** | The redundancy is intentional and directly required by Task 6 Requirement R2 to compare hand-written doubles to Moq. |
 
 ---
 
 ### 3. Judge the AI (Step 5)
 
-_(To be filled after AI review)_
+The AI accurately caught missing negative tests for license age (BR-13), luxury vehicle rules (BR-16), van rules (BR-17), and deposit reduction under Premium insurance (BR-26). However, the AI incorrectly considered the hand-written mock vs. Moq tests redundant, failing to realize that rewriting hand-written doubles with Moq was an explicit requirement of Task 6 (R2). Additionally, its suggestion to test back-to-back bookings currently fails against starter code due to a bug in the date overlap condition.
 
 ---
 

@@ -569,4 +569,190 @@ public class BookingServiceTests
 
         await Verify(booking);
     }
+
+    // --- AI-Suggested & Additional Boundary Cases ---
+
+    [Fact]
+    [Trait("Rule", "BR-13")]
+    public void CreateBooking_LicenseUnderOneYear_ThrowsBookingRejectedException()
+    {
+        var pickup = FixedNow.AddHours(3);
+        var customer = new CustomerFaker().WithLicenseYears(0, pickup).Generate();
+        customer.LicenseIssueDate = pickup.AddMonths(-6);
+        var vehicle = new VehicleFaker().Generate();
+        var sut = CreateSut(
+            customers: new StubCustomerRepository(customer),
+            vehicles: new StubVehicleRepository(vehicle));
+
+        var request = new BookingRequest
+        {
+            CustomerId = customer.Id,
+            VehicleId = vehicle.Id,
+            PickupAt = pickup,
+            ReturnAt = pickup.AddDays(1)
+        };
+
+        var act = () => sut.CreateBooking(request);
+
+        act.Should().Throw<BookingRejectedException>()
+            .WithMessage("License must be held for at least 1 year");
+    }
+
+    [Fact]
+    [Trait("Rule", "BR-16")]
+    public void CreateBooking_LuxuryUnderAgeTwentyFive_ThrowsBookingRejectedException()
+    {
+        var pickup = FixedNow.AddHours(3);
+        var customer = new CustomerFaker().WithAge(24, pickup).WithLicenseYears(3, pickup).Generate();
+        var luxuryVehicle = new VehicleFaker().WithCategory(VehicleCategory.Luxury).Generate();
+        var sut = CreateSut(
+            customers: new StubCustomerRepository(customer),
+            vehicles: new StubVehicleRepository(luxuryVehicle));
+
+        var request = new BookingRequest
+        {
+            CustomerId = customer.Id,
+            VehicleId = luxuryVehicle.Id,
+            PickupAt = pickup,
+            ReturnAt = pickup.AddDays(1)
+        };
+
+        var act = () => sut.CreateBooking(request);
+
+        act.Should().Throw<BookingRejectedException>()
+            .WithMessage("Luxury vehicles require age 25+ and 3 years of license");
+    }
+
+    [Fact]
+    [Trait("Rule", "BR-17")]
+    public void CreateBooking_VanLicenseUnderTwoYears_ThrowsBookingRejectedException()
+    {
+        var pickup = FixedNow.AddHours(3);
+        var customer = new CustomerFaker().WithAge(30, pickup).WithLicenseYears(1, pickup).Generate();
+        customer.LicenseIssueDate = pickup.AddYears(-1).AddMonths(-2);
+        var van = new VehicleFaker().WithCategory(VehicleCategory.Van).Generate();
+        var sut = CreateSut(
+            customers: new StubCustomerRepository(customer),
+            vehicles: new StubVehicleRepository(van));
+
+        var request = new BookingRequest
+        {
+            CustomerId = customer.Id,
+            VehicleId = van.Id,
+            PickupAt = pickup,
+            ReturnAt = pickup.AddDays(1)
+        };
+
+        var act = () => sut.CreateBooking(request);
+
+        act.Should().Throw<BookingRejectedException>()
+            .WithMessage("Vans require 2 years of license");
+    }
+
+    [Fact]
+    [Trait("Rule", "BR-26")]
+    public void CreateBooking_PremiumInsurance_HalvesRequiredDeposit()
+    {
+        var mockPayment = new MockPaymentGateway();
+        var customer = new CustomerFaker().WithTier(LoyaltyTier.None).Generate();
+        var vehicle = new VehicleFaker().WithCategory(VehicleCategory.SUV).Generate(); // SUV deposit = 2500 -> Premium halves to 1250
+        var sut = CreateSut(
+            customers: new StubCustomerRepository(customer),
+            vehicles: new StubVehicleRepository(vehicle),
+            payments: mockPayment);
+
+        var request = new BookingRequest
+        {
+            CustomerId = customer.Id,
+            VehicleId = vehicle.Id,
+            PickupAt = FixedNow.AddHours(3),
+            ReturnAt = FixedNow.AddDays(1),
+            InsurancePlan = InsurancePlan.Premium,
+            AdditionalDrivers = 0
+        };
+
+        var booking = sut.CreateBooking(request);
+
+        booking.Deposit.Should().Be(1250m);
+        mockPayment.VerifyCharged(customer.Id, 1250m);
+    }
+
+    [Fact]
+    [Trait("Rule", "BR-21")]
+    public void CreateBooking_NonOverlappingDates_CreatesBookingSuccessfully()
+    {
+        var customer = new CustomerFaker().Generate();
+        var vehicle = new VehicleFaker().Generate();
+        var fakeBookings = new FakeBookingRepository();
+        
+        var existingReturn = FixedNow.AddDays(2);
+        fakeBookings.Add(new Booking
+        {
+            VehicleId = vehicle.Id,
+            PickupAt = FixedNow.AddDays(1),
+            ReturnAt = existingReturn,
+            Status = BookingStatus.Reserved
+        });
+
+        var sut = CreateSut(
+            customers: new StubCustomerRepository(customer),
+            vehicles: new StubVehicleRepository(vehicle),
+            bookings: fakeBookings);
+
+        var request = new BookingRequest
+        {
+            CustomerId = customer.Id,
+            VehicleId = vehicle.Id,
+            PickupAt = existingReturn.AddHours(1),
+            ReturnAt = existingReturn.AddDays(2),
+            InsurancePlan = InsurancePlan.Basic,
+            AdditionalDrivers = 0
+        };
+
+        var result = sut.CreateBooking(request);
+
+        result.Should().NotBeNull();
+        result.Status.Should().Be(BookingStatus.Reserved);
+    }
+
+    // --- R5: AutoFixture 3 ([InlineAutoData] for age boundaries) ---
+
+    [Theory]
+    [InlineAutoData(20, false)]
+    [InlineAutoData(21, true)]
+    [InlineAutoData(25, true)]
+    [Trait("Rule", "BR-12")]
+    public void CreateBooking_InlineAutoDataAges_ValidatesAgeRequirement(
+        int age, bool shouldPass, BookingRequest request)
+    {
+        var pickup = FixedNow.AddHours(5);
+        var customer = new CustomerFaker().WithAge(age, pickup).WithLicenseYears(5, pickup).Generate();
+        customer.IsBlacklisted = false;
+        var vehicle = new VehicleFaker().WithCategory(VehicleCategory.Economy).Generate();
+        vehicle.IsAvailable = true;
+
+        var sut = CreateSut(
+            customers: new StubCustomerRepository(customer),
+            vehicles: new StubVehicleRepository(vehicle));
+
+        request.CustomerId = customer.Id;
+        request.VehicleId = vehicle.Id;
+        request.PickupAt = pickup;
+        request.ReturnAt = pickup.AddDays(1);
+        request.AdditionalDrivers = 0;
+        request.InsurancePlan = InsurancePlan.Basic;
+        request.PromoCode = null;
+
+        var act = () => sut.CreateBooking(request);
+
+        if (shouldPass)
+        {
+            act.Should().NotThrow();
+        }
+        else
+        {
+            act.Should().Throw<BookingRejectedException>()
+                .WithMessage("Driver must be at least 21");
+        }
+    }
 }
