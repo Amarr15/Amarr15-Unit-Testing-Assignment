@@ -203,4 +203,44 @@ public class ParkingFeeCalculatorTests
 
         fee.Should().Be(expectedFee);
     }
+
+    [Fact]
+    public void Calculate_NegativeChargedKwh_ThrowsArgumentException()
+    {
+        var session = new ParkingSession
+        {
+            EntryTime = new DateTime(2026, 11, 2, 10, 0, 0),
+            ExitTime = new DateTime(2026, 11, 2, 12, 0, 0),
+            Vehicle = VehicleType.Car,
+            ChargedKwh = -1m
+        };
+
+        var act = () => _sut.Calculate(session);
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*negative*");
+    }
+
+    [Theory]
+    [InlineData("2026-11-02 10:00:00", "2026-11-02 12:00:00", VehicleType.Car, false, false, 10.0, 55.0)]
+    [InlineData("2026-11-02 09:00:00", "2026-11-02 17:00:00", VehicleType.Car, true, false, 4.0, 14.0)]
+    [InlineData("2026-11-02 10:00:00", "2026-11-02 22:00:00", VehicleType.Car, false, false, 20.0, 150.0)]
+    [InlineData("2026-11-02 20:00:00", "2026-11-02 22:00:00", VehicleType.Car, true, false, 10.0, 45.0)]
+    public void Calculate_WithChargedKwh_AddsThreePointFivePerKwhWithoutCapOrDiscount(
+        string entryStr, string exitStr, VehicleType vehicle, bool isSubscriber, bool ticketLost, double kwh, decimal expectedFee)
+    {
+        var session = new ParkingSession
+        {
+            EntryTime = DateTime.Parse(entryStr),
+            ExitTime = DateTime.Parse(exitStr),
+            Vehicle = vehicle,
+            IsSubscriber = isSubscriber,
+            TicketLost = ticketLost,
+            ChargedKwh = (decimal)kwh
+        };
+
+        var fee = _sut.Calculate(session);
+
+        fee.Should().Be(expectedFee);
+    }
 }
