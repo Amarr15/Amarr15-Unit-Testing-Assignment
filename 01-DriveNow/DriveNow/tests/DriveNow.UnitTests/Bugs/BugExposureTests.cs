@@ -204,4 +204,39 @@ public class BugExposureTests
         // BR-41: 240m = exactly 4 hours -> 10% * 4 = 40% of daily (240). Not full daily (600).
         report.LateFee.Should().Be(240m);
     }
+
+    // BUG 7: BR-51 - Cancellation uses > 48 instead of >= 48
+    [Fact]
+    [Trait("Rule", "BR-51")]
+    public void Cancel_ExactlyFortyEightHoursNotice_ShouldChargeZeroFee()
+    {
+        var pickup = FixedNow.AddHours(48); // exactly 48 hours notice
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Reserved,
+            PickupAt = pickup,
+            Deposit = 1000m
+        };
+        var vehicle = new VehicleFaker().WithDailyRate(600m).Generate();
+        var customer = new CustomerFaker().WithTier(LoyaltyTier.None).Generate();
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+
+        var sut = new CancellationService(
+            fakeBookings,
+            new StubVehicleRepository(vehicle),
+            new StubCustomerRepository(customer),
+            new FakePromoCodeRepository(),
+            new MockPaymentGateway(),
+            new SpySmsSender(),
+            new DummyEmailSender(),
+            new DummyAuditLog(),
+            _timeProvider);
+
+        var fee = sut.Cancel(1);
+
+        // BR-51: >= 48 hours notice -> 0 fee
+        fee.Should().Be(0m);
+    }
 }
