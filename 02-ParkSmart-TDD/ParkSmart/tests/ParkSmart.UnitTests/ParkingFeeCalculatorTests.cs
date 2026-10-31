@@ -117,4 +117,26 @@ public class ParkingFeeCalculatorTests
 
         fee.Should().Be(expectedFee);
     }
+
+    [Theory]
+    [InlineData(VehicleType.Car, "2026-11-01 23:00:00", "2026-11-02 07:00:00", 30)]
+    [InlineData(VehicleType.Car, "2026-11-01 22:00:00", "2026-11-01 23:00:00", 10)]
+    [InlineData(VehicleType.Car, "2026-11-01 21:59:00", "2026-11-02 07:00:00", 80)]
+    [InlineData(VehicleType.Car, "2026-11-01 23:00:00", "2026-11-02 08:01:00", 80)]
+    [InlineData(VehicleType.Motorcycle, "2026-11-01 23:00:00", "2026-11-02 07:00:00", 15)]
+    [InlineData(VehicleType.Truck, "2026-11-01 23:00:00", "2026-11-02 07:00:00", 75)]
+    public void Calculate_NightWindow_AppliesLowerOfNormalFeeAndNightFlatRate(
+        VehicleType vehicle, string entryStr, string exitStr, decimal expectedFee)
+    {
+        var session = new ParkingSession
+        {
+            EntryTime = DateTime.Parse(entryStr),
+            ExitTime = DateTime.Parse(exitStr),
+            Vehicle = vehicle
+        };
+
+        var fee = _sut.Calculate(session);
+
+        fee.Should().Be(expectedFee);
+    }
 }
