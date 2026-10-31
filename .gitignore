@@ -10,3 +10,4 @@ audit.log
 .idea/
 .vscode/
 *.received.txt
+CoverageReport/
