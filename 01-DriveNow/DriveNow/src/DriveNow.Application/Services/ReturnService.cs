@@ -128,7 +128,7 @@ public class ReturnService
 
     static decimal LateFee(int lateMinutes, decimal dailyRate)
     {
-        if (lateMinutes >= 240)
+        if (lateMinutes > 240)
         {
             var periods = (int)Math.Ceiling(lateMinutes / 1440d);
             return Round(dailyRate * Math.Max(periods, 1));
