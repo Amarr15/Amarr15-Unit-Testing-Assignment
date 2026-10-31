@@ -298,6 +298,68 @@ public class PricingServiceTests
         }
     }
 
+    // BR-40 & Worked Example B (MemberData + BeEquivalentTo + AssertionScope)
+    public static IEnumerable<object[]> WorkedExampleBData()
+    {
+        // Example B: Vehicle 1500/day SUV, Thursday 09:00 to next Thursday 09:30 (7 days + 30 min grace = 7 days),
+        // Silver customer aged 23, Premium insurance, 1 driver, SAVE15 promo.
+        var pickup = new DateTime(2026, 11, 5, 9, 0, 0, DateTimeKind.Utc); // Thursday
+        var returnAt = new DateTime(2026, 11, 12, 9, 30, 0, DateTimeKind.Utc); // Thursday + 30m
+
+        var customer = new CustomerFaker()
+            .WithTier(LoyaltyTier.Silver)
+            .WithAge(23, pickup)
+            .Generate();
+
+        var vehicle = new VehicleFaker()
+            .WithDailyRate(1500m)
+            .WithCategory(VehicleCategory.SUV)
+            .Generate();
+
+        var request = new BookingRequest
+        {
+            CustomerId = customer.Id,
+            VehicleId = vehicle.Id,
+            PickupAt = pickup,
+            ReturnAt = returnAt,
+            InsurancePlan = InsurancePlan.Premium,
+            AdditionalDrivers = 1,
+            PromoCode = "SAVE15"
+        };
+
+        var expectedBreakdown = new PriceBreakdown
+        {
+            RentalDays = 7,
+            BaseAmount = 10500.00m,
+            WeekendSurcharge = 600.00m,
+            YoungDriverSurcharge = 1575.00m,
+            DurationDiscount = 1050.00m,
+            LoyaltyDiscount = 525.00m,
+            PromoDiscount = 1050.00m,
+            InsuranceCost = 2100.00m,
+            AdditionalDriversCost = 700.00m,
+            Total = 12850.00m
+        };
+
+        yield return new object[] { customer, vehicle, request, expectedBreakdown };
+    }
+
+    [Theory]
+    [MemberData(nameof(WorkedExampleBData))]
+    [Trait("Rule", "BR-40")]
+    public void Calculate_WorkedExampleB_ReturnsAccuratePriceBreakdown(
+        Customer customer, Vehicle vehicle, BookingRequest request, PriceBreakdown expected)
+    {
+        var sut = CreateSut();
+
+        var actual = sut.Calculate(customer, vehicle, request);
+
+        using (new AssertionScope())
+        {
+            actual.Should().BeEquivalentTo(expected);
+        }
+    }
+
     [Fact]
     [Trait("Rule", "BR-40")]
     public async Task Calculate_WorkedExampleA_MatchesSnapshotOutput()
