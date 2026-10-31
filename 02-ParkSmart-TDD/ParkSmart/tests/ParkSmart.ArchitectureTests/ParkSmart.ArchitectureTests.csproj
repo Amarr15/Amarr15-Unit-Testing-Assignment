@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\src\ParkSmart.Application\ParkSmart.Application.csproj" />
     <ProjectReference Include="..\..\src\ParkSmart.Infrastructure\ParkSmart.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\ParkSmart.ConsoleApp\ParkSmart.ConsoleApp.csproj" />
+    <ProjectReference Include="..\ParkSmart.UnitTests\ParkSmart.UnitTests.csproj" />
   </ItemGroup>
 
 </Project>
