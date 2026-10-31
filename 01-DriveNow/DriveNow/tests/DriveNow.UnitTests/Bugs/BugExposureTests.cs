@@ -90,4 +90,28 @@ public class BugExposureTests
         result.LoyaltyDiscount.Should().Be(300m);
         result.PromoDiscount.Should().Be(450m);
     }
+
+    // BUG 4: BR-39 - Free driver should be Gold/Platinum only, not Silver
+    [Fact]
+    [Trait("Rule", "BR-39")]
+    public void Calculate_SilverCustomerWithOneDriver_DoesNotGetFreeDriver()
+    {
+        var customer = new CustomerFaker().WithTier(LoyaltyTier.Silver).WithAge(30, FixedNow).Generate();
+        var vehicle = new VehicleFaker().WithDailyRate(500m).WithCategory(VehicleCategory.Economy).Generate();
+        var promoRepo = new FakePromoCodeRepository();
+        var sut = new PricingService(promoRepo, _timeProvider);
+
+        var request = new BookingRequest
+        {
+            PickupAt = FixedNow,
+            ReturnAt = FixedNow.AddDays(1),
+            InsurancePlan = InsurancePlan.Basic,
+            AdditionalDrivers = 1
+        };
+
+        var result = sut.Calculate(customer, vehicle, request);
+
+        // BR-39: Only Gold and Platinum get first driver free. Silver should pay full.
+        result.AdditionalDriversCost.Should().Be(100m); // 1 driver * 100 * 1 day
+    }
 }
