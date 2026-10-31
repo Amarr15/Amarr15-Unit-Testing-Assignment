@@ -35,6 +35,8 @@ public class PricingService
             LoyaltyTier.Platinum => 15m,
             _ => 0m
         };
+        if (durationPercent + loyaltyPercent > 25m)
+            loyaltyPercent = 25m - durationPercent;
 
         var durationDiscount = Round(baseAmount * durationPercent / 100m);
         var loyaltyDiscount = Round(baseAmount * loyaltyPercent / 100m);
