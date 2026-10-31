@@ -170,4 +170,38 @@ public class BugExposureTests
         // BR-21: Back-to-back (pickup == existing return) should be allowed
         act.Should().NotThrow();
     }
+
+    // BUG 6: BR-41 - Late fee uses >= 240 instead of > 240
+    [Fact]
+    [Trait("Rule", "BR-41")]
+    public void ProcessReturn_ExactlyTwoHundredFortyMinutesLate_ChargesHourlyNotDaily()
+    {
+        var plannedReturn = FixedNow.AddMinutes(-240);
+        var booking = new Booking
+        {
+            Id = 1,
+            Status = BookingStatus.Active,
+            ReturnAt = plannedReturn,
+            StartMileage = 1000,
+            Price = new PriceBreakdown { RentalDays = 1 }
+        };
+        var vehicle = new VehicleFaker().WithDailyRate(600m).Generate();
+        var customer = new CustomerFaker().Generate();
+        var fakeBookings = new FakeBookingRepository();
+        fakeBookings.Add(booking);
+
+        var sut = new ReturnService(
+            fakeBookings,
+            new StubVehicleRepository(vehicle),
+            new StubCustomerRepository(customer),
+            new MockPaymentGateway(),
+            new DummyEmailSender(),
+            new DummyAuditLog(),
+            _timeProvider);
+
+        var report = sut.ProcessReturn(1, 1000, 4, 0);
+
+        // BR-41: 240m = exactly 4 hours -> 10% * 4 = 40% of daily (240). Not full daily (600).
+        report.LateFee.Should().Be(240m);
+    }
 }
