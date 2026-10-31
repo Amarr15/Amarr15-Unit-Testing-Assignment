@@ -57,7 +57,7 @@ public class CancellationService
         var fee = 0m;
         if (customer.LoyaltyTier != LoyaltyTier.Platinum)
         {
-            if (hours > 48)
+            if (hours >= 48)
                 fee = 0m;
             else if (hours >= 24)
                 fee = Round(vehicle.DailyRate * 0.50m);
