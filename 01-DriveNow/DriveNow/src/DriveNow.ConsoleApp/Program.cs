@@ -15,6 +15,7 @@ using DriveNow.Infrastructure.Repositories;
 
 namespace DriveNow.ConsoleApp;
 
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 internal static class Program
 {
     static readonly InMemoryDatabase Db = new();
