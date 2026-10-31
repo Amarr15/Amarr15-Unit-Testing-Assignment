@@ -121,7 +121,7 @@ public class PricingService
     static decimal DriverCost(LoyaltyTier tier, int additionalDrivers, int days)
     {
         var billable = additionalDrivers;
-        if (tier >= LoyaltyTier.Silver && billable > 0)
+        if (tier >= LoyaltyTier.Gold && billable > 0)
             billable--;
 
         return Round(100m * billable * days);
