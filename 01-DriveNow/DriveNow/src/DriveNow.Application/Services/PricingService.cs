@@ -35,12 +35,19 @@ public class PricingService
             LoyaltyTier.Platinum => 15m,
             _ => 0m
         };
-        if (durationPercent + loyaltyPercent > 25m)
-            loyaltyPercent = 25m - durationPercent;
 
         var durationDiscount = Round(baseAmount * durationPercent / 100m);
         var loyaltyDiscount = Round(baseAmount * loyaltyPercent / 100m);
-        var promoDiscount = PromoDiscount(request.PromoCode, days, vehicle.Category, baseAmount);
+        var rawPromoDiscount = PromoDiscount(request.PromoCode, days, vehicle.Category, baseAmount);
+
+        // BR-37: Discounts combine additively up to a maximum of 25% of base.
+        // If combined discount exceeds 25%, keep duration and loyalty and reduce promo discount.
+        var maxTotalDiscount = Round(baseAmount * 0.25m);
+        var combinedFixedDiscount = durationDiscount + loyaltyDiscount;
+        var promoDiscount = rawPromoDiscount;
+        if (combinedFixedDiscount + promoDiscount > maxTotalDiscount)
+            promoDiscount = Math.Max(0m, maxTotalDiscount - combinedFixedDiscount);
+
         var insurance = InsuranceCost(request.InsurancePlan, vehicle.Category, days);
         var drivers = DriverCost(customer.LoyaltyTier, request.AdditionalDrivers, days);
         var total = Round(baseAmount + weekend + young - durationDiscount - loyaltyDiscount - promoDiscount + insurance + drivers);
