@@ -91,4 +91,40 @@ The AI suggested that having both an explicit assertion test and a snapshot test
 
 ## Feature: BookingService (Task 6)
 
+### 1. Self Assessment (Step 2)
+
+#### Rule Coverage Table:
+| Rule | Test Name | Boundaries Tested | Gap / Notes |
+|---|---|---|---|
+| **BR-10** (Customer exists) | `CreateBooking_CustomerDoesNotExist_ThrowsCustomerNotFoundException` | Non-existent customer ID | Throws `CustomerNotFoundException`. |
+| **BR-11** (Blacklisted customer) | `CreateBooking_CustomerBlacklisted_ThrowsBookingRejectedException` | Customer with `IsBlacklisted = true` | Throws `BookingRejectedException`. |
+| **BR-12** (Driver age >= 21) | `CreateBooking_CustomizedAdultCustomer_SucceedsWithValidDates` | Age 30 adult | Age boundary 20 vs 21 covered in AI suggestions. |
+| **BR-14** (Vehicle exists) | `CreateBooking_VehicleDoesNotExist_ThrowsVehicleNotFoundException` | Non-existent vehicle ID | Throws `VehicleNotFoundException`. |
+| **BR-15** (Vehicle available) | `CreateBooking_VehicleUnavailable_ThrowsBookingRejectedException` | Vehicle with `IsAvailable = false` | Throws `BookingRejectedException`. |
+| **BR-18** (Pickup >= 2 hours) | `CreateBooking_PickupTooSoon_ThrowsBookingRejectedException` | Pickup 90 minutes from now (< 2 hours) | Throws `BookingRejectedException`. |
+| **BR-19** (Rental span <= 30 days) | `CreateBooking_DurationOverThirtyDays_ThrowsBookingRejectedException` | Span of 35 days | Throws `BookingRejectedException`. |
+| **BR-20** (Additional drivers 0..3) | `CreateBooking_TooManyDrivers_ThrowsBookingRejectedException` | 4 additional drivers | Throws `BookingRejectedException`. |
+| **BR-21** (No vehicle date overlap) | `CreateBooking_VehicleDatesOverlap_ThrowsBookingRejectedException` | Overlapping date ranges | Throws `BookingRejectedException`. |
+| **BR-22** (Customer max 2 bookings) | `CreateBooking_CustomerHasTwoActiveBookings_ThrowsBookingRejectedException` | Customer with 2 active/reserved bookings | Throws `BookingRejectedException`. |
+| **BR-24** (Status Reserved & Created) | `CreateBooking_ValidRequest_StoresBookingInFakeRepository`<br>`CreateBooking_ValidRequest_MatchesSnapshotOutput` | Verified in FakeBookingRepo and Verify Snapshot | Status Reserved, correct start mileage. |
+| **BR-26** (Deposit & Gateway) | `CreateBooking_StandardCustomer_ChargesDepositViaMockGateway`<br>`CreateBooking_PlatinumCustomer_NeverCallsPaymentGateway`<br>`CreateBooking_MoqStandardCustomer_ChargesDepositOnce`<br>`CreateBooking_MoqPlatinumCustomer_NeverChargesDeposit`<br>`CreateBooking_AutoMoqFrozenGateway_ChargesExpectedDeposit` | Standard customer (charges deposit) vs Platinum customer (0 deposit, gateway not called) | Tested with hand-written Mock, Moq, and AutoMoq. |
+| **BR-27** (Confirmation & Audit) | `CreateBooking_ValidRequest_SendsConfirmationSms` | SMS sent with reference and phone number | Tested with Spy double. |
+
+**Verdict**:
+I covered the essential business rules for customer/vehicle validation, date constraints, overlap detection, deposit charges with test doubles (Mock/Moq/AutoMoq), and confirmation notifications.
+
+---
+
+### 2. AI Review & Decisions (Steps 3 & 4)
+
+_(To be filled after AI review)_
+
+---
+
+### 3. Judge the AI (Step 5)
+
+_(To be filled after AI review)_
+
+---
+
 ## Feature: Pickups, Returns, and Cancellations (Task 7)
