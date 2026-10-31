@@ -29,4 +29,28 @@ public class BugExposureTests
         // BR-03: Grace period is up to 60 minutes, so exactly 60 minutes should not trigger extra day
         result.Should().Be(1);
     }
+
+    // BUG 2: BR-33 - Duration discount: days > 7 should be days >= 7
+    [Fact]
+    [Trait("Rule", "BR-33")]
+    public void Calculate_SevenDayRental_AppliesTenPercentDurationDiscount()
+    {
+        var customer = new CustomerFaker().WithTier(LoyaltyTier.None).WithAge(30, FixedNow).Generate();
+        var vehicle = new VehicleFaker().WithDailyRate(1000m).WithCategory(VehicleCategory.Economy).Generate();
+        var promoRepo = new FakePromoCodeRepository();
+        var sut = new PricingService(promoRepo, _timeProvider);
+
+        var request = new BookingRequest
+        {
+            PickupAt = FixedNow,
+            ReturnAt = FixedNow.AddDays(7), // exactly 7 days
+            InsurancePlan = InsurancePlan.Basic,
+            AdditionalDrivers = 0
+        };
+
+        var result = sut.Calculate(customer, vehicle, request);
+
+        // BR-33: 7-13 days -> 10% of base. Base = 7000. Discount should be 700
+        result.DurationDiscount.Should().Be(700m);
+    }
 }
