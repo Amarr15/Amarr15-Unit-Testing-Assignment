@@ -1,0 +1,20 @@
+﻿{
+  Id: 1,
+  Reference: DN-20261104-ABCD,
+  CustomerId: 1,
+  VehicleId: 1,
+  PickupAt: DateTime_1,
+  ReturnAt: DateTime_2,
+  InsurancePlan: Standard,
+  Price: {
+    RentalDays: 3,
+    BaseAmount: 1800.0,
+    WeekendSurcharge: 120.00,
+    LoyaltyDiscount: 180.0,
+    InsuranceCost: 450.0,
+    Total: 2190.00
+  },
+  Deposit: 1000.0,
+  CreatedAt: DateTime_3,
+  StartMileage: 22155
+}

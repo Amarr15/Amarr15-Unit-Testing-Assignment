@@ -1,0 +1,8 @@
+﻿DriveNow receipt DN-20261105-ABCD
+Base rental...................1,800.00 EGP
+Weekend surcharge.............  360.00 EGP
+Insurance.....................  300.00 EGP
+Late fee......................  120.00 EGP
+Damage........................  500.00 EGP
+VAT 14%.......................  431.20 EGP
+Total.........................3,511.20 EGP

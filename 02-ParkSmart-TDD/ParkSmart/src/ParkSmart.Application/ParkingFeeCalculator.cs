@@ -1,0 +1,101 @@
+using ParkSmart.Domain;
+
+namespace ParkSmart.Application;
+
+public class ParkingFeeCalculator
+{
+    private const decimal EvRatePerKwh = 3.50m;
+
+    public decimal Calculate(ParkingSession session)
+    {
+        if (session.ExitTime < session.EntryTime)
+            throw new ArgumentException("Exit time must be after entry time");
+
+        if (session.ChargedKwh < 0)
+            throw new ArgumentException("Charged kWh cannot be negative");
+
+        var duration = session.ExitTime - session.EntryTime;
+        var isFriday = session.EntryTime.DayOfWeek == DayOfWeek.Friday;
+        var freeMinutes = isFriday ? 120 : 15;
+
+        decimal fee = 0m;
+        if (session.TicketLost || duration.TotalMinutes > freeMinutes)
+        {
+            fee = CalculateBaseParkingFee(session, duration);
+        }
+
+        if (session.ChargedKwh > 0)
+            fee += CalculateEvChargingFee(session.ChargedKwh);
+
+        return fee;
+    }
+
+    private static decimal CalculateBaseParkingFee(ParkingSession session, TimeSpan duration)
+    {
+        var (hourlyRate, dailyCap, nightFlatRate, lostTicketMin) = GetVehicleRates(session.Vehicle);
+        var normalFee = CalculateNormalFee(duration, hourlyRate, dailyCap);
+
+        var fee = IsNightWindow(session.EntryTime, session.ExitTime)
+            ? Math.Min(normalFee, nightFlatRate)
+            : normalFee;
+
+        if (session.IsSubscriber)
+            fee = ApplySubscriberDiscount(fee, session.EntryTime, session.ExitTime);
+
+        if (session.TicketLost)
+            fee = Math.Max(fee, lostTicketMin);
+
+        return fee;
+    }
+
+    private static decimal CalculateEvChargingFee(decimal chargedKwh) =>
+        Math.Round(chargedKwh * EvRatePerKwh, 2, MidpointRounding.AwayFromZero);
+
+    private static (decimal HourlyRate, decimal DailyCap, decimal NightFlatRate, decimal LostTicketMin) GetVehicleRates(VehicleType vehicle) =>
+        vehicle switch
+        {
+            VehicleType.Motorcycle => (5m, 40m, 15m, 75m),
+            VehicleType.Truck => (25m, 200m, 75m, 300m),
+            _ => (10m, 80m, 30m, 150m)
+        };
+
+    private static decimal CalculateNormalFee(TimeSpan duration, decimal hourlyRate, decimal dailyCap)
+    {
+        var fullDays = (int)(duration.TotalHours / 24);
+        var remainingMinutes = duration.TotalMinutes - (fullDays * 24 * 60);
+
+        var remainingHours = (int)Math.Ceiling(remainingMinutes / 60.0);
+        var remainingFee = Math.Min(remainingHours * hourlyRate, dailyCap);
+
+        return (fullDays * dailyCap) + remainingFee;
+    }
+
+    private static decimal ApplySubscriberDiscount(decimal fee, DateTime entry, DateTime exit)
+    {
+        if (IsSubscriberFreeWindow(entry, exit))
+            return 0m;
+
+        return Math.Round(fee * 0.50m, 2, MidpointRounding.AwayFromZero);
+    }
+
+    private static bool IsNightWindow(DateTime entry, DateTime exit)
+    {
+        if (entry.TimeOfDay < TimeSpan.FromHours(22))
+            return false;
+
+        return exit.Date == entry.Date ||
+               (exit.Date == entry.Date.AddDays(1) && exit.TimeOfDay <= TimeSpan.FromHours(8));
+    }
+
+    private static bool IsSubscriberFreeWindow(DateTime entry, DateTime exit)
+    {
+        if (entry.Date != exit.Date)
+            return false;
+
+        var isSunToThu = entry.DayOfWeek is DayOfWeek.Sunday or DayOfWeek.Monday or DayOfWeek.Tuesday or DayOfWeek.Wednesday or DayOfWeek.Thursday;
+        if (!isSunToThu)
+            return false;
+
+        return entry.TimeOfDay >= TimeSpan.FromHours(7) && exit.TimeOfDay <= TimeSpan.FromHours(19);
+    }
+}
