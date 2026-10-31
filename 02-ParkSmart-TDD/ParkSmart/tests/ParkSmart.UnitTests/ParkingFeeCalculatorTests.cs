@@ -97,4 +97,24 @@ public class ParkingFeeCalculatorTests
 
         fee.Should().Be(expectedFee);
     }
+
+    [Theory]
+    [InlineData(VehicleType.Motorcycle, 3, 0, 15)]
+    [InlineData(VehicleType.Truck, 10, 0, 200)]
+    [InlineData(VehicleType.Truck, 30, 0, 350)]
+    public void Calculate_VehicleType_AppliesTypeSpecificHourlyRateAndDailyCap(
+        VehicleType vehicle, int hours, int minutes, decimal expectedFee)
+    {
+        var entry = new DateTime(2026, 11, 1, 10, 0, 0);
+        var session = new ParkingSession
+        {
+            EntryTime = entry,
+            ExitTime = entry.AddHours(hours).AddMinutes(minutes),
+            Vehicle = vehicle
+        };
+
+        var fee = _sut.Calculate(session);
+
+        fee.Should().Be(expectedFee);
+    }
 }
