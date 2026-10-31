@@ -6,6 +6,10 @@ public class ParkingFeeCalculator
 {
     public decimal Calculate(ParkingSession session)
     {
-        return 0m;
+        var duration = session.ExitTime - session.EntryTime;
+        if (duration.TotalMinutes <= 15)
+            return 0m;
+
+        return 10m;
     }
 }
