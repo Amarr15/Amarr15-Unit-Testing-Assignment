@@ -36,4 +36,27 @@ These will be fixed in Task 4 (refactoring + interface extraction).
 
 ## Refactoring & Interface Placement Decisions (Task 4)
 
-_(to be filled after Task 4)_
+### Interface Placement Decisions
+
+1. **Domain Interfaces (`DriveNow.Domain/Interfaces`)**:
+   - `ICustomerRepository`, `IVehicleRepository`, `IBookingRepository`, `IPromoCodeRepository`
+   - **Decision**: Domain entities define core business concepts. Placing repository interfaces in `Domain.Interfaces` allows both `Domain` and `Application` to depend on abstractions rather than concrete database classes (DIP). `Infrastructure` then implements these interfaces. This preserves the architecture rule that `Application` depends only on `Domain`.
+
+2. **Application Interfaces (`DriveNow.Application/Interfaces`)**:
+   - `IPaymentGateway`, `ISmsSender`, `IEmailSender`, `IAuditLog`, `IReferenceGenerator`
+   - **Decision**: These interfaces represent external adapters or output ports used directly by application services to execute use cases. Placing them in `Application.Interfaces` keeps `Application` decoupled from infrastructure details (file systems, payment APIs, SMS gateways, and random generators).
+
+### Naming & Structure Fixes
+
+- Renamed `CustomerRepo` to `CustomerRepository` and made it implement `ICustomerRepository` in namespace `DriveNow.Infrastructure.Repositories`.
+- Renamed `RentalMath` to `RentalMathService` so that all domain service classes end with `Service` and reside in `DriveNow.Domain.Services`.
+- Moved `CancellationService` and `ReceiptService` into `DriveNow.Application.Services` so that every service ends with `Service` and resides in a namespace ending with `Services`.
+- Converted `InMemoryDatabase` from a static class to an instance class so it can be cleanly injected into repositories and isolated between unit tests.
+
+### Verification
+
+After completing the refactor:
+- `DriveNow.ArchitectureTests`: **9 / 9 passed** (0 failures).
+- `DriveNow.UnitTests`: **14 / 14 passed**.
+- `DriveNow.LegacyTests`: **5 / 5 passed**.
+- `DriveNow.ConsoleApp`: builds and runs normally with manual constructor injection.
