@@ -16,7 +16,7 @@ public static class RentalMathService
         var span = returnAt - pickup;
         var days = (int)(span.Ticks / TimeSpan.TicksPerDay);
         var remainder = TimeSpan.FromTicks(span.Ticks % TimeSpan.TicksPerDay);
-        if (remainder.TotalMinutes >= 60)
+        if (remainder.TotalMinutes > 60)
             days++;
 
         return Math.Max(days, 1);
