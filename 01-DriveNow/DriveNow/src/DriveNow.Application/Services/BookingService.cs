@@ -63,7 +63,7 @@ public class BookingService
             throw new BookingRejectedException("Up to 3 additional drivers allowed");
 
         if (_bookings.GetOpenBookingsForVehicle(vehicle.Id).Any(existing =>
-                request.PickupAt <= existing.ReturnAt && request.ReturnAt >= existing.PickupAt))
+                request.PickupAt < existing.ReturnAt && request.ReturnAt > existing.PickupAt))
             throw new BookingRejectedException("Vehicle is already booked for these dates");
 
         if (_bookings.CountOpenBookingsForCustomer(customer.Id) >= 2)
