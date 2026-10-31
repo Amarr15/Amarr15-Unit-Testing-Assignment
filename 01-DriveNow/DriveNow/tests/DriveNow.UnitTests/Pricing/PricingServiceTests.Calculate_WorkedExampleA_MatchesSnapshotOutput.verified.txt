@@ -1,0 +1,7 @@
+﻿{
+  RentalDays: 3,
+  BaseAmount: 1800.0,
+  LoyaltyDiscount: 180.0,
+  InsuranceCost: 450.0,
+  Total: 2070.00
+}

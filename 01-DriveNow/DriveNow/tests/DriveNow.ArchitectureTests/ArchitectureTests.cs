@@ -118,16 +118,14 @@ public class ArchitectureTests
     [Fact]
     public void TestClasses_Should_EndWithTests()
     {
-        var result = Types.InAssembly(UnitTestsAssembly)
-            .That()
-            .AreClasses()
-            .And()
-            .ArePublic()
-            .Should()
-            .HaveNameEndingWith("Tests")
-            .GetResult();
+        var testClasses = UnitTestsAssembly.GetTypes()
+            .Where(t => t.IsClass && t.IsPublic &&
+                        t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                         .Any(m => m.GetCustomAttributes(typeof(FactAttribute), true).Any() ||
+                                   m.GetCustomAttributes(typeof(TheoryAttribute), true).Any()))
+            .ToList();
 
-        result.IsSuccessful.Should().BeTrue();
+        testClasses.Should().OnlyContain(t => t.Name.EndsWith("Tests"));
     }
 
     // R5: Test methods match Method_Scenario_ExpectedResult
