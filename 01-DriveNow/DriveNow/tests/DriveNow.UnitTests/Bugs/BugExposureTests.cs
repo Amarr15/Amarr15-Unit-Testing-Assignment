@@ -53,4 +53,41 @@ public class BugExposureTests
         // BR-33: 7-13 days -> 10% of base. Base = 7000. Discount should be 700
         result.DurationDiscount.Should().Be(700m);
     }
+
+    // BUG 3: BR-37 - Cap should reduce promo, not loyalty
+    [Fact]
+    [Trait("Rule", "BR-37")]
+    public void Calculate_DiscountCapExceeded_ReducesPromoNotLoyalty()
+    {
+        var customer = new CustomerFaker().WithTier(LoyaltyTier.Gold).WithAge(30, FixedNow).Generate();
+        var vehicle = new VehicleFaker().WithDailyRate(1000m).WithCategory(VehicleCategory.Economy).Generate();
+        var promo = new PromoCode
+        {
+            Code = "BIG20",
+            DiscountPercent = 20,
+            ValidFrom = FixedNow.AddDays(-5).Date,
+            ValidUntil = FixedNow.AddDays(5).Date,
+            MinDays = 1,
+            MaxUses = 100,
+            UsedCount = 0
+        };
+        var promoRepo = new FakePromoCodeRepository(promo);
+        var sut = new PricingService(promoRepo, _timeProvider);
+
+        var request = new BookingRequest
+        {
+            PickupAt = FixedNow,
+            ReturnAt = FixedNow.AddDays(3), // 3 days -> 0% duration discount
+            InsurancePlan = InsurancePlan.Basic,
+            AdditionalDrivers = 0,
+            PromoCode = "BIG20"
+        };
+
+        var result = sut.Calculate(customer, vehicle, request);
+
+        // Base = 3000. Loyalty = 10% (300). Raw promo = 20% (600). Total raw = 30% > 25%.
+        // BR-37: Keep loyalty (300), reduce promo so total discount <= 25% (max 750). Promo should be 450.
+        result.LoyaltyDiscount.Should().Be(300m);
+        result.PromoDiscount.Should().Be(450m);
+    }
 }
