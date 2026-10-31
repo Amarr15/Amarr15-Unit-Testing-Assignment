@@ -10,24 +10,28 @@ public class ParkingFeeCalculator
             throw new ArgumentException("Exit time must be after entry time");
 
         var duration = session.ExitTime - session.EntryTime;
-        if (duration.TotalMinutes <= 15)
+        if (!session.TicketLost && duration.TotalMinutes <= 15)
             return 0m;
 
-        var (hourlyRate, dailyCap, nightFlatRate) = GetVehicleRates(session.Vehicle);
+        var (hourlyRate, dailyCap, nightFlatRate, lostTicketMin) = GetVehicleRates(session.Vehicle);
         var normalFee = CalculateNormalFee(duration, hourlyRate, dailyCap);
 
-        if (IsNightWindow(session.EntryTime, session.ExitTime))
-            return Math.Min(normalFee, nightFlatRate);
+        var fee = IsNightWindow(session.EntryTime, session.ExitTime)
+            ? Math.Min(normalFee, nightFlatRate)
+            : normalFee;
 
-        return normalFee;
+        if (session.TicketLost)
+            fee = Math.Max(fee, lostTicketMin);
+
+        return fee;
     }
 
-    private static (decimal HourlyRate, decimal DailyCap, decimal NightFlatRate) GetVehicleRates(VehicleType vehicle) =>
+    private static (decimal HourlyRate, decimal DailyCap, decimal NightFlatRate, decimal LostTicketMin) GetVehicleRates(VehicleType vehicle) =>
         vehicle switch
         {
-            VehicleType.Motorcycle => (5m, 40m, 15m),
-            VehicleType.Truck => (25m, 200m, 75m),
-            _ => (10m, 80m, 30m)
+            VehicleType.Motorcycle => (5m, 40m, 15m, 75m),
+            VehicleType.Truck => (25m, 200m, 75m, 300m),
+            _ => (10m, 80m, 30m, 150m)
         };
 
     private static decimal CalculateNormalFee(TimeSpan duration, decimal hourlyRate, decimal dailyCap)
