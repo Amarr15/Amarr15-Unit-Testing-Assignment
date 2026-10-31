@@ -77,4 +77,24 @@ public class ParkingFeeCalculatorTests
         act.Should().Throw<ArgumentException>()
             .WithMessage("Exit time must be after entry time");
     }
+
+    [Theory]
+    [InlineData(10, 0, 80)]
+    [InlineData(30, 0, 140)]
+    [InlineData(48, 0, 160)]
+    [InlineData(48, 10, 170)]
+    public void Calculate_LongDuration_AppliesDailyCapOfEightyPerTwentyFourHours(int hours, int minutes, decimal expectedFee)
+    {
+        var entry = new DateTime(2026, 11, 1, 10, 0, 0);
+        var session = new ParkingSession
+        {
+            EntryTime = entry,
+            ExitTime = entry.AddHours(hours).AddMinutes(minutes),
+            Vehicle = VehicleType.Car
+        };
+
+        var fee = _sut.Calculate(session);
+
+        fee.Should().Be(expectedFee);
+    }
 }
