@@ -4,6 +4,8 @@ namespace ParkSmart.Application;
 
 public class ParkingFeeCalculator
 {
+    private const decimal EvRatePerKwh = 3.50m;
+
     public decimal Calculate(ParkingSession session)
     {
         if (session.ExitTime < session.EntryTime)
@@ -19,25 +21,35 @@ public class ParkingFeeCalculator
         decimal fee = 0m;
         if (session.TicketLost || duration.TotalMinutes > freeMinutes)
         {
-            var (hourlyRate, dailyCap, nightFlatRate, lostTicketMin) = GetVehicleRates(session.Vehicle);
-            var normalFee = CalculateNormalFee(duration, hourlyRate, dailyCap);
-
-            fee = IsNightWindow(session.EntryTime, session.ExitTime)
-                ? Math.Min(normalFee, nightFlatRate)
-                : normalFee;
-
-            if (session.IsSubscriber)
-                fee = ApplySubscriberDiscount(fee, session.EntryTime, session.ExitTime);
-
-            if (session.TicketLost)
-                fee = Math.Max(fee, lostTicketMin);
+            fee = CalculateBaseParkingFee(session, duration);
         }
 
         if (session.ChargedKwh > 0)
-            fee += Math.Round(session.ChargedKwh * 3.50m, 2, MidpointRounding.AwayFromZero);
+            fee += CalculateEvChargingFee(session.ChargedKwh);
 
         return fee;
     }
+
+    private static decimal CalculateBaseParkingFee(ParkingSession session, TimeSpan duration)
+    {
+        var (hourlyRate, dailyCap, nightFlatRate, lostTicketMin) = GetVehicleRates(session.Vehicle);
+        var normalFee = CalculateNormalFee(duration, hourlyRate, dailyCap);
+
+        var fee = IsNightWindow(session.EntryTime, session.ExitTime)
+            ? Math.Min(normalFee, nightFlatRate)
+            : normalFee;
+
+        if (session.IsSubscriber)
+            fee = ApplySubscriberDiscount(fee, session.EntryTime, session.ExitTime);
+
+        if (session.TicketLost)
+            fee = Math.Max(fee, lostTicketMin);
+
+        return fee;
+    }
+
+    private static decimal CalculateEvChargingFee(decimal chargedKwh) =>
+        Math.Round(chargedKwh * EvRatePerKwh, 2, MidpointRounding.AwayFromZero);
 
     private static (decimal HourlyRate, decimal DailyCap, decimal NightFlatRate, decimal LostTicketMin) GetVehicleRates(VehicleType vehicle) =>
         vehicle switch
