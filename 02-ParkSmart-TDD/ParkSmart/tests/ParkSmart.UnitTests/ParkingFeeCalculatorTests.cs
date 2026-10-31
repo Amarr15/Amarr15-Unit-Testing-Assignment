@@ -181,4 +181,26 @@ public class ParkingFeeCalculatorTests
 
         fee.Should().Be(expectedFee);
     }
+
+    [Theory]
+    [InlineData("2026-11-02 09:00:00", "2026-11-02 17:00:00", false, 0)]
+    [InlineData("2026-11-02 18:00:00", "2026-11-02 20:00:00", false, 10)]
+    [InlineData("2026-11-07 10:00:00", "2026-11-07 13:00:00", false, 15)]
+    [InlineData("2026-11-02 10:00:00", "2026-11-02 11:00:00", true, 150)]
+    public void Calculate_Subscriber_AppliesFreeWindowOrFiftyPercentDiscountAndAppliesLostTicketMinimumAfterwards(
+        string entryStr, string exitStr, bool ticketLost, decimal expectedFee)
+    {
+        var session = new ParkingSession
+        {
+            EntryTime = DateTime.Parse(entryStr),
+            ExitTime = DateTime.Parse(exitStr),
+            Vehicle = VehicleType.Car,
+            IsSubscriber = true,
+            TicketLost = ticketLost
+        };
+
+        var fee = _sut.Calculate(session);
+
+        fee.Should().Be(expectedFee);
+    }
 }
