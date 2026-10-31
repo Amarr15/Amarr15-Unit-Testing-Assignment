@@ -57,6 +57,21 @@ public class RentalMathTests
         result.Should().Be(expectedAge);
     }
 
+    [Fact]
+    [Trait("Rule", "BR-01")]
+    public void CalculateAge_LeapYearBirthday_TargetIsLeapYear_ReturnsAgeOnFeb29()
+    {
+        // Arrange
+        DateTime dateOfBirth = new DateTime(2000, 2, 29);
+        DateTime onDate = new DateTime(2024, 2, 29);
+
+        // Act
+        int result = RentalMath.CalculateAge(dateOfBirth, onDate);
+
+        // Assert
+        result.Should().Be(24);
+    }
+
 
     // BR-02: Calculate License Years
 

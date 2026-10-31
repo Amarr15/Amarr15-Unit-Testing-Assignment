@@ -1,79 +1,81 @@
 # Naming Conventions
 
-- **Name**: Ammar Yasser
-- **Track**: Backend .NET (Cycle 1)
+**Name:** Ammar Yasser  
+**Track:** Backend .NET – Cycle 1
+
+This document defines the naming conventions used in the DriveNow project, especially for unit tests and related test utilities.
 
 ---
 
-## R1: Test Projects, Classes, and Files
+## R1. Test Projects and Classes
 
-1. **Test Projects**:
-   - Named as `<ProjectUnderTest>.<TestType>` (e.g., `DriveNow.UnitTests`, `DriveNow.ArchitectureTests`, `ParkSmart.UnitTests`).
-2. **Test Classes & Files**:
-   - Every test class tests a single production class and must end with `Tests`.
-   - File name matches class name: `<ClassUnderTest>Tests.cs` (e.g., `RentalMathTests.cs`, `PricingServiceTests.cs`).
-   - Located in directories mirroring the production structure.
+- Test projects follow the naming format: `<ProjectName>.<TestType>`.
+  - Example: `DriveNow.UnitTests`
+- Each test class focuses on one production class.
+- Test classes and files end with `Tests`.
+  - Example: `PricingServiceTests.cs`
+- Test files should follow the same folder structure as the production code whenever possible.
+
+## R2. Test Method Naming
+
+Test methods follow this format:
+
+`MethodName_Scenario_ExpectedResult`
+
+Examples:
+
+- `CalculateAge_BirthdayNotReached_ReturnsCorrectAge`
+- `CalculateRentalDays_ExtraMinutes_AddsExtraDay`
+- `Calculate_YoungDriver_AddsSurcharge`
+
+This naming style makes it easier to identify the tested method, the scenario, and the expected result when a test fails.
+
+## R3. Test Data and Test Doubles
+
+For manually implemented test doubles, use the following prefixes:
+
+- `Fake`: Simplified working implementation.
+- `Stub`: Returns predefined data.
+- `Spy`: Records calls or interactions.
+- `Dummy`: Used only to satisfy a dependency.
+- `Mock`: Hand-written mock implementation, when needed.
+
+Examples:
+
+- `FakeBookingRepository`
+- `StubPricingService`
+- `SpySmsSender`
+- `DummyPaymentGateway`
+
+For Moq-based tests, use descriptive variable names such as:
+
+- `paymentGatewayMock`
+- `bookingRepositoryMock`
+
+For Bogus data generators, use the `Faker` suffix.
+
+Examples:
+
+- `CustomerFaker`
+- `VehicleFaker`
+
+## R4. Production Code Naming
+
+- Interfaces start with `I`.
+  - Example: `IBookingRepository`
+- Repository classes end with `Repository`.
+  - Example: `BookingRepository`
+- Service classes end with `Service`.
+  - Example: `PricingService`
+- Custom exception classes end with `Exception`.
+  - Example: `RentalRuleException`
+
+Namespaces should follow the existing project structure:
+
+- Repositories: `DriveNow.Infrastructure.Repositories`
+- Services: `DriveNow.Application.Services`
+- Domain exceptions: `DriveNow.Domain.Exceptions`
 
 ---
 
-## R2: Test Method Naming Style
-
-### Comparison of Known Styles:
-
-1. **`Method_Scenario_ExpectedResult` (Roy Osherove style)**:
-   - Structure: `[MethodUnderTest]_[Condition/Input]_[ExpectedOutcome]`
-   - Pros: Groups tests by method in Test Explorer; immediately clear what function failed and under which condition.
-   - Cons: Method name change requires test renaming.
-
-2. **`Should_ExpectedBehavior_When_Condition`**:
-   - Structure: `Should_[DoSomething]_When_[Condition]`
-   - Pros: Focuses on behavior from a caller's point of view.
-   - Cons: Doesn't explicitly state the exact method name, harder to sort alphabetically by method.
-
-3. **`Given_Precondition_When_Action_Then_Result` (BDD style)**:
-   - Structure: `Given_[Context]_When_[Action]_Then_[Outcome]`
-   - Pros: Great for acceptance tests and non-technical stakeholders.
-   - Cons: Too long and verbose for simple unit tests.
-
-### Selected Style & Justification:
-I chose **`Method_Scenario_ExpectedResult`**.
-- It provides the fastest navigation when viewing failed tests in xUnit Test Explorer.
-- It clearly separates what is being called, what input triggers the edge case, and what the expected result or exception is.
-
-### 3 Examples from DriveNow:
-1. `CalculateAge_BirthdayHasNotOccurredThisYear_DoesNotCountCurrentYear`
-2. `CalculateRentalDays_LeftoverMinutesGreaterThanSixty_AddsExtraDay`
-3. `Calculate_DriverAgeBetween21And24_AddsFifteenPercentYoungDriverSurcharge`
-
----
-
-## R3: Test Doubles, Bogus, and AutoFixture Naming
-
-1. **Hand-written Test Doubles**:
-   - Prefix with the specific test double pattern:
-     - `Fake<Concept>` (e.g., `FakeBookingRepository`)
-     - `Stub<Concept>` (e.g., `StubPricingService`)
-     - `Spy<Concept>` (e.g., `SpySmsSender`)
-     - `Dummy<Concept>` (e.g., `DummyPaymentGateway`)
-     - `Mock<Concept>` (e.g., `MockPaymentGateway`)
-2. **Bogus Fakers**:
-   - Suffix with `Faker`: `<Entity>Faker` (e.g., `CustomerFaker`, `VehicleFaker`).
-3. **AutoFixture**:
-   - Customizations suffix with `Customization` (e.g., `ValidCustomerCustomization`).
-   - Data attributes suffix with `Attribute` (e.g., `AutoMoqDataAttribute`).
-
----
-
-## R4: Production Code Naming & Namespaces
-
-1. **Interfaces**:
-   - Must start with letter `I` (e.g., `IBookingRepository`, `IPaymentGateway`).
-2. **Repositories**:
-   - Class name must end with `Repository` (e.g., `BookingRepository`).
-   - Must live in a `.Repositories` namespace (e.g., `DriveNow.Infrastructure.Repositories`).
-3. **Services**:
-   - Class name must end with `Service` (e.g., `PricingService`, `BookingService`).
-   - Must live in a `.Services` namespace (e.g., `DriveNow.Application.Services`).
-4. **Exceptions**:
-   - Class name must end with `Exception` (e.g., `RentalRuleException`).
-   - Must live in `DriveNow.Domain.Exceptions`.
+These conventions should be followed when adding new classes and tests to the project. Existing code can be updated gradually when necessary.
