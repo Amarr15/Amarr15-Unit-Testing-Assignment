@@ -1,2 +1,5 @@
-# Amarr15-Unit-Testing-Assignment
-Assignment repo for assignment/1-9 (Unit Testing Assignment)
+# Unit Testing & TDD Assignment
+
+- **Name**: Ammar Yasser
+- **ID / Group**: Cycle 1 - Backend .NET
+- **Notes / Assumptions**: Initial setup for Assignment 9.

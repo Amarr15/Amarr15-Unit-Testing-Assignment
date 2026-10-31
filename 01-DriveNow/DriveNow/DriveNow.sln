@@ -1,0 +1,69 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DriveNow.Domain", "src\DriveNow.Domain\DriveNow.Domain.csproj", "{E86EEF6A-D3A6-4F25-A627-E37140918417}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DriveNow.Application", "src\DriveNow.Application\DriveNow.Application.csproj", "{89D64D1B-3962-422A-8A50-995AD3B1AB9F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DriveNow.Infrastructure", "src\DriveNow.Infrastructure\DriveNow.Infrastructure.csproj", "{C436EE1C-F448-453A-BE77-C93CFC441544}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DriveNow.ConsoleApp", "src\DriveNow.ConsoleApp\DriveNow.ConsoleApp.csproj", "{B837193E-248F-492A-8337-142DFE864DBE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DriveNow.LegacyTests", "tests\DriveNow.LegacyTests\DriveNow.LegacyTests.csproj", "{D86F575D-EA25-4383-A8D9-52C0EBE8BEEF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E86EEF6A-D3A6-4F25-A627-E37140918417}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E86EEF6A-D3A6-4F25-A627-E37140918417}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E86EEF6A-D3A6-4F25-A627-E37140918417}.Release|x64.ActiveCfg = Release|Any CPU
+		{E86EEF6A-D3A6-4F25-A627-E37140918417}.Release|x64.Build.0 = Release|Any CPU
+		{E86EEF6A-D3A6-4F25-A627-E37140918417}.Release|x86.ActiveCfg = Release|Any CPU
+		{E86EEF6A-D3A6-4F25-A627-E37140918417}.Release|x86.Build.0 = Release|Any CPU
+		{89D64D1B-3962-422A-8A50-995AD3B1AB9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89D64D1B-3962-422A-8A50-995AD3B1AB9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89D64D1B-3962-422A-8A50-995AD3B1AB9F}.Release|x64.ActiveCfg = Release|Any CPU
+		{89D64D1B-3962-422A-8A50-995AD3B1AB9F}.Release|x64.Build.0 = Release|Any CPU
+		{89D64D1B-3962-422A-8A50-995AD3B1AB9F}.Release|x86.ActiveCfg = Release|Any CPU
+		{89D64D1B-3962-422A-8A50-995AD3B1AB9F}.Release|x86.Build.0 = Release|Any CPU
+		{C436EE1C-F448-453A-BE77-C93CFC441544}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C436EE1C-F448-453A-BE77-C93CFC441544}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C436EE1C-F448-453A-BE77-C93CFC441544}.Release|x64.ActiveCfg = Release|Any CPU
+		{C436EE1C-F448-453A-BE77-C93CFC441544}.Release|x64.Build.0 = Release|Any CPU
+		{C436EE1C-F448-453A-BE77-C93CFC441544}.Release|x86.ActiveCfg = Release|Any CPU
+		{C436EE1C-F448-453A-BE77-C93CFC441544}.Release|x86.Build.0 = Release|Any CPU
+		{B837193E-248F-492A-8337-142DFE864DBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B837193E-248F-492A-8337-142DFE864DBE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B837193E-248F-492A-8337-142DFE864DBE}.Release|x64.ActiveCfg = Release|Any CPU
+		{B837193E-248F-492A-8337-142DFE864DBE}.Release|x64.Build.0 = Release|Any CPU
+		{B837193E-248F-492A-8337-142DFE864DBE}.Release|x86.ActiveCfg = Release|Any CPU
+		{B837193E-248F-492A-8337-142DFE864DBE}.Release|x86.Build.0 = Release|Any CPU
+		{D86F575D-EA25-4383-A8D9-52C0EBE8BEEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D86F575D-EA25-4383-A8D9-52C0EBE8BEEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D86F575D-EA25-4383-A8D9-52C0EBE8BEEF}.Release|x64.ActiveCfg = Release|Any CPU
+		{D86F575D-EA25-4383-A8D9-52C0EBE8BEEF}.Release|x64.Build.0 = Release|Any CPU
+		{D86F575D-EA25-4383-A8D9-52C0EBE8BEEF}.Release|x86.ActiveCfg = Release|Any CPU
+		{D86F575D-EA25-4383-A8D9-52C0EBE8BEEF}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E86EEF6A-D3A6-4F25-A627-E37140918417} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{89D64D1B-3962-422A-8A50-995AD3B1AB9F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{C436EE1C-F448-453A-BE77-C93CFC441544} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{B837193E-248F-492A-8337-142DFE864DBE} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{D86F575D-EA25-4383-A8D9-52C0EBE8BEEF} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+	EndGlobalSection
+EndGlobal
+

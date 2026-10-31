@@ -1,0 +1,12 @@
+[Bb]in/
+[Oo]bj/
+[Tt]est[Rr]esults/
+outbox/
+*.audit.log
+audit.log
+*.user
+*.suo
+.vs/
+.idea/
+.vscode/
+*.received.txt
