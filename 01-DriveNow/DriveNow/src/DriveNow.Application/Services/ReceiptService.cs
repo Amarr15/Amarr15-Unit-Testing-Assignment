@@ -1,7 +1,8 @@
+using DriveNow.Application.Receipts;
 using DriveNow.Domain.Entities;
 using DriveNow.Domain.ValueObjects;
 
-namespace DriveNow.Application.Receipts;
+namespace DriveNow.Application.Services;
 
 public class ReceiptService
 {

@@ -1,30 +1,58 @@
+using DriveNow.Application.Interfaces;
 using DriveNow.Application.Models;
 using DriveNow.Domain.Entities;
 using DriveNow.Domain.Enums;
 using DriveNow.Domain.Exceptions;
+using DriveNow.Domain.Interfaces;
 using DriveNow.Domain.Services;
-using DriveNow.Infrastructure.External;
-using DriveNow.Infrastructure.Logging;
-using DriveNow.Infrastructure.Repositories;
 
 namespace DriveNow.Application.Services;
 
 public class BookingService
 {
-    readonly CustomerRepo _customers = new();
-    readonly VehicleRepository _vehicles = new();
-    readonly BookingRepository _bookings = new();
-    readonly PromoCodeRepository _promos = new();
-    readonly PricingService _pricing = new();
-    readonly PaymentGateway _payments = new();
-    readonly SmsSender _sms = new();
-    readonly EmailSender _email = new();
+    readonly ICustomerRepository _customers;
+    readonly IVehicleRepository _vehicles;
+    readonly IBookingRepository _bookings;
+    readonly IPromoCodeRepository _promos;
+    readonly PricingService _pricing;
+    readonly IPaymentGateway _payments;
+    readonly ISmsSender _sms;
+    readonly IEmailSender _email;
+    readonly IAuditLog _auditLog;
+    readonly TimeProvider _timeProvider;
+    readonly IReferenceGenerator _referenceGenerator;
+
+    public BookingService(
+        ICustomerRepository customers,
+        IVehicleRepository vehicles,
+        IBookingRepository bookings,
+        IPromoCodeRepository promos,
+        PricingService pricing,
+        IPaymentGateway payments,
+        ISmsSender sms,
+        IEmailSender email,
+        IAuditLog auditLog,
+        TimeProvider timeProvider,
+        IReferenceGenerator referenceGenerator)
+    {
+        _customers = customers;
+        _vehicles = vehicles;
+        _bookings = bookings;
+        _promos = promos;
+        _pricing = pricing;
+        _payments = payments;
+        _sms = sms;
+        _email = email;
+        _auditLog = auditLog;
+        _timeProvider = timeProvider;
+        _referenceGenerator = referenceGenerator;
+    }
 
     public Booking CreateBooking(BookingRequest request)
     {
         var customer = RequireCustomer(request.CustomerId);
-        var age = RentalMath.CalculateAge(customer.DateOfBirth, request.PickupAt);
-        var licenseYears = RentalMath.CalculateLicenseYears(customer.LicenseIssueDate, request.PickupAt);
+        var age = RentalMathService.CalculateAge(customer.DateOfBirth, request.PickupAt);
+        var licenseYears = RentalMathService.CalculateLicenseYears(customer.LicenseIssueDate, request.PickupAt);
         RejectCustomer(customer, age, licenseYears);
 
         var vehicle = _vehicles.GetById(request.VehicleId)
@@ -53,9 +81,9 @@ public class BookingService
             PromoCode = request.PromoCode,
             Price = price,
             Status = BookingStatus.Reserved,
-            CreatedAt = DateTime.Now,
+            CreatedAt = _timeProvider.GetLocalNow().DateTime,
             StartMileage = vehicle.Mileage,
-            Reference = "DN-" + request.PickupAt.ToString("yyyyMMdd") + "-" + RandomCode()
+            Reference = "DN-" + request.PickupAt.ToString("yyyyMMdd") + "-" + _referenceGenerator.GenerateCode()
         };
 
         booking.Deposit = DepositFor(vehicle.Category, request.InsurancePlan, customer.LoyaltyTier);
@@ -76,7 +104,7 @@ public class BookingService
         var note = $"Booking {booking.Reference} confirmed";
         _sms.Send(customer.Phone, note);
         _email.Send(customer.Email, note, note);
-        AuditLog.Write($"Booking {booking.Reference} created");
+        _auditLog.Write($"Booking {booking.Reference} created");
         return booking;
     }
 
@@ -86,12 +114,12 @@ public class BookingService
             ?? throw new BookingNotFoundException($"Booking #{bookingId} not found");
         if (booking.Status != BookingStatus.Reserved)
             throw new InvalidBookingStateException("Only reserved bookings can be started");
-        if (DateTime.Now < booking.PickupAt.AddHours(-1))
+        if (_timeProvider.GetLocalNow().DateTime < booking.PickupAt.AddHours(-1))
             throw new InvalidBookingStateException("Too early to start this rental");
 
         booking.Status = BookingStatus.Active;
         _bookings.Update(booking);
-        AuditLog.Write($"Booking {booking.Reference} started");
+        _auditLog.Write($"Booking {booking.Reference} started");
     }
 
     Customer RequireCustomer(int customerId)
@@ -111,7 +139,7 @@ public class BookingService
             throw new BookingRejectedException("License must be held for at least 1 year");
     }
 
-    static void RejectVehicle(Vehicle vehicle, int age, int licenseYears, BookingRequest request)
+    void RejectVehicle(Vehicle vehicle, int age, int licenseYears, BookingRequest request)
     {
         if (!vehicle.IsAvailable)
             throw new BookingRejectedException("Vehicle is not available");
@@ -122,7 +150,7 @@ public class BookingService
         if (vehicle.Category == VehicleCategory.Van && licenseYears < 2)
             throw new BookingRejectedException("Vans require 2 years of license");
 
-        if (request.PickupAt < DateTime.Now.AddHours(2))
+        if (request.PickupAt < _timeProvider.GetLocalNow().DateTime.AddHours(2))
             throw new BookingRejectedException("Pickup must be at least 2 hours from now");
 
         if (request.ReturnAt <= request.PickupAt || request.ReturnAt - request.PickupAt > TimeSpan.FromDays(30))
@@ -145,16 +173,5 @@ public class BookingService
             deposit = Math.Round(deposit / 2m, 2, MidpointRounding.AwayFromZero);
 
         return deposit;
-    }
-
-    static string RandomCode()
-    {
-        const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var random = new Random();
-        var chars = new char[4];
-        for (var i = 0; i < chars.Length; i++)
-            chars[i] = alphabet[random.Next(alphabet.Length)];
-
-        return new string(chars);
     }
 }

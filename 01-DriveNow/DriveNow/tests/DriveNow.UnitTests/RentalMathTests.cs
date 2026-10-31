@@ -17,7 +17,7 @@ public class RentalMathTests
         DateTime onDate = new DateTime(2024, 5, 15);
 
         // Act
-        int result = RentalMath.CalculateAge(dateOfBirth, onDate);
+        int result = RentalMathService.CalculateAge(dateOfBirth, onDate);
 
         // Assert
         result.Should().Be(24);
@@ -32,7 +32,7 @@ public class RentalMathTests
         DateTime onDate = new DateTime(2024, 5, 14);
 
         // Act
-        int result = RentalMath.CalculateAge(dateOfBirth, onDate);
+        int result = RentalMathService.CalculateAge(dateOfBirth, onDate);
 
         // Assert
         result.Should().Be(23);
@@ -51,7 +51,7 @@ public class RentalMathTests
         DateTime onDate = new DateTime(2023, 2, day);
 
         // Act
-        int result = RentalMath.CalculateAge(dateOfBirth, onDate);
+        int result = RentalMathService.CalculateAge(dateOfBirth, onDate);
 
         // Assert
         result.Should().Be(expectedAge);
@@ -66,7 +66,7 @@ public class RentalMathTests
         DateTime onDate = new DateTime(2024, 2, 29);
 
         // Act
-        int result = RentalMath.CalculateAge(dateOfBirth, onDate);
+        int result = RentalMathService.CalculateAge(dateOfBirth, onDate);
 
         // Assert
         result.Should().Be(24);
@@ -90,7 +90,7 @@ public class RentalMathTests
         DateTime onDate = new DateTime(2024, 5, 15);
 
         // Act
-        int result = RentalMath.CalculateLicenseYears(issueDate, onDate);
+        int result = RentalMathService.CalculateLicenseYears(issueDate, onDate);
 
         // Assert
         result.Should().Be(expectedYears);
@@ -111,7 +111,7 @@ public class RentalMathTests
         DateTime returnAt = pickup.AddHours(hours);
 
         // Act
-        Action act = () => RentalMath.CalculateRentalDays(pickup, returnAt);
+        Action act = () => RentalMathService.CalculateRentalDays(pickup, returnAt);
 
         // Assert
         act.Should().Throw<ArgumentException>()
@@ -135,7 +135,7 @@ public class RentalMathTests
         DateTime returnAt = pickup.AddHours(hours).AddMinutes(minutes);
 
         // Act
-        int result = RentalMath.CalculateRentalDays(pickup, returnAt);
+        int result = RentalMathService.CalculateRentalDays(pickup, returnAt);
 
         // Assert
         result.Should().Be(expectedDays);

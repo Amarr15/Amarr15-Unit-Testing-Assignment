@@ -4,16 +4,22 @@ using DriveNow.Domain.ValueObjects;
 
 namespace DriveNow.Infrastructure.Persistence;
 
-public static class InMemoryDatabase
+public class InMemoryDatabase
 {
-    public static List<Customer> Customers = [];
-    public static List<Vehicle> Vehicles = [];
-    public static List<PromoCode> PromoCodes = [];
-    public static List<Booking> Bookings = [];
-    public static int NextBookingId = 3;
+    public List<Customer> Customers { get; set; } = [];
+    public List<Vehicle> Vehicles { get; set; } = [];
+    public List<PromoCode> PromoCodes { get; set; } = [];
+    public List<Booking> Bookings { get; set; } = [];
+    public int NextBookingId { get; set; } = 3;
 
-    static InMemoryDatabase()
+    public InMemoryDatabase()
     {
+        Reset();
+    }
+
+    public void Reset()
+    {
+        NextBookingId = 3;
         Customers =
         [
             Customer(1, "Ahmed Fawzy", DateTime.Today.AddYears(-34), DateTime.Today.AddYears(-12), LoyaltyTier.Gold, 18, false),

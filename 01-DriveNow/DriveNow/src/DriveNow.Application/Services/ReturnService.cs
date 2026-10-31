@@ -1,22 +1,41 @@
+using DriveNow.Application.Interfaces;
 using DriveNow.Domain.Entities;
 using DriveNow.Domain.Enums;
 using DriveNow.Domain.Exceptions;
+using DriveNow.Domain.Interfaces;
 using DriveNow.Domain.Services;
 using DriveNow.Domain.ValueObjects;
 using DriveNow.Application.Receipts;
-using DriveNow.Infrastructure.External;
-using DriveNow.Infrastructure.Logging;
-using DriveNow.Infrastructure.Repositories;
 
 namespace DriveNow.Application.Services;
 
 public class ReturnService
 {
-    readonly BookingRepository _bookings = new();
-    readonly VehicleRepository _vehicles = new();
-    readonly CustomerRepo _customers = new();
-    readonly PaymentGateway _payments = new();
-    readonly EmailSender _email = new();
+    readonly IBookingRepository _bookings;
+    readonly IVehicleRepository _vehicles;
+    readonly ICustomerRepository _customers;
+    readonly IPaymentGateway _payments;
+    readonly IEmailSender _email;
+    readonly IAuditLog _auditLog;
+    readonly TimeProvider _timeProvider;
+
+    public ReturnService(
+        IBookingRepository bookings,
+        IVehicleRepository vehicles,
+        ICustomerRepository customers,
+        IPaymentGateway payments,
+        IEmailSender email,
+        IAuditLog auditLog,
+        TimeProvider timeProvider)
+    {
+        _bookings = bookings;
+        _vehicles = vehicles;
+        _customers = customers;
+        _payments = payments;
+        _email = email;
+        _auditLog = auditLog;
+        _timeProvider = timeProvider;
+    }
 
     public ReturnReport ProcessReturn(int bookingId, int endMileage, int fuelQuarters, decimal damageCost)
     {
@@ -34,7 +53,7 @@ public class ReturnService
         var customer = _customers.GetById(booking.CustomerId)
             ?? throw new CustomerNotFoundException($"Customer #{booking.CustomerId} not found");
 
-        var now = DateTime.Now;
+        var now = _timeProvider.GetLocalNow().DateTime;
         var report = BuildReport(booking, vehicle, endMileage, fuelQuarters, damageCost, now);
 
         booking.Status = BookingStatus.Completed;
@@ -61,7 +80,7 @@ public class ReturnService
             new CurrencyFormatter(),
             new ReceiptFormatter()).Build(booking, report);
         _email.Send(customer.Email, $"Receipt {booking.Reference}", receipt);
-        AuditLog.Write($"Booking {booking.Reference} returned");
+        _auditLog.Write($"Booking {booking.Reference} returned");
         return report;
     }
 

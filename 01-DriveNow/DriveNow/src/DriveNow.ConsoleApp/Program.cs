@@ -1,5 +1,5 @@
-﻿using System.Globalization;
-using DriveNow.Application.Bookings;
+using System.Globalization;
+
 using DriveNow.Application.Models;
 using DriveNow.Application.Receipts;
 using DriveNow.Application.Services;
@@ -8,19 +8,34 @@ using DriveNow.Domain.Exceptions;
 using DriveNow.Domain.Services;
 using DriveNow.Domain.ValueObjects;
 using DriveNow.Infrastructure.External;
+using DriveNow.Infrastructure.Generators;
+using DriveNow.Infrastructure.Logging;
+using DriveNow.Infrastructure.Persistence;
 using DriveNow.Infrastructure.Repositories;
 
 namespace DriveNow.ConsoleApp;
 
 internal static class Program
 {
-    static readonly CustomerRepo Customers = new();
-    static readonly VehicleRepository Vehicles = new();
-    static readonly BookingRepository Bookings = new();
-    static readonly PricingService Pricing = new();
-    static readonly BookingService BookingService = new();
-    static readonly ReturnService ReturnService = new();
-    static readonly CancellationService CancellationService = new();
+    static readonly InMemoryDatabase Db = new();
+    static readonly CustomerRepository Customers = new(Db);
+    static readonly VehicleRepository Vehicles = new(Db);
+    static readonly BookingRepository Bookings = new(Db);
+    static readonly PromoCodeRepository Promos = new(Db);
+    static readonly PaymentGateway Payments = new();
+    static readonly SmsSender Sms = new();
+    static readonly EmailSender Email = new();
+    static readonly AuditLog Audit = new();
+    static readonly DefaultReferenceGenerator RefGen = new();
+
+    static readonly PricingService Pricing = new(Promos, TimeProvider.System);
+    static readonly BookingService BookingService = new(
+        Customers, Vehicles, Bookings, Promos, Pricing,
+        Payments, Sms, Email, Audit, TimeProvider.System, RefGen);
+    static readonly ReturnService ReturnService = new(
+        Bookings, Vehicles, Customers, Payments, Email, Audit, TimeProvider.System);
+    static readonly CancellationService CancellationService = new(
+        Bookings, Vehicles, Customers, Promos, Payments, Sms, Email, Audit, TimeProvider.System);
 
     static void Main()
     {
@@ -98,7 +113,7 @@ internal static class Program
     {
         foreach (var customer in Customers.GetAll())
         {
-            var age = RentalMath.CalculateAge(customer.DateOfBirth, DateTime.Today);
+            var age = RentalMathService.CalculateAge(customer.DateOfBirth, DateTime.Today);
             Console.WriteLine(
                 $"{customer.Id,2}  {customer.FullName,-16} age {age,2}  {customer.LoyaltyTier,-10} rentals {customer.CompletedRentals,2}  {(customer.IsBlacklisted ? "blacklisted" : "clear")}");
         }

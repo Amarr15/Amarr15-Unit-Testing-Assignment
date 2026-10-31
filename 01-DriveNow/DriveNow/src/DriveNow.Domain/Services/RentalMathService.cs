@@ -1,6 +1,6 @@
 namespace DriveNow.Domain.Services;
 
-public static class RentalMath
+public static class RentalMathService
 {
     public static int CalculateAge(DateTime dateOfBirth, DateTime onDate) =>
         FullYears(dateOfBirth, onDate);
