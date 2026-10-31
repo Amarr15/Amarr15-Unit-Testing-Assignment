@@ -59,7 +59,7 @@ public class RentalMathTests
 
     [Fact]
     [Trait("Rule", "BR-01")]
-    public void CalculateAge_LeapYearBirthday_TargetIsLeapYear_ReturnsAgeOnFeb29()
+    public void CalculateAge_TargetIsLeapYear_ReturnsAgeOnFeb29()
     {
         // Arrange
         DateTime dateOfBirth = new DateTime(2000, 2, 29);
