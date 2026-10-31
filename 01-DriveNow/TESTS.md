@@ -40,6 +40,48 @@ The AI suggested checking edge cases for centuries (e.g. year 1900 not being a l
 
 ## Feature: PricingService (Task 5)
 
+### 1. Self Assessment (Step 2)
+
+#### Rule Coverage Table:
+| Rule | Test Name | Boundaries Tested | Gap / Notes |
+|---|---|---|---|
+| **BR-30** (Base Amount) | `Calculate_ValidDuration_ComputesBaseAmount` | 1, 3, 5 rental days at 600 & 1000 daily rates | None. |
+| **BR-31** (Weekend Surcharge) | `Calculate_RentalIncludesWeekend_AppliesWeekendSurcharge` | Wed-Thu (0 days), Fri (1 day), Fri-Sat (2 days), Sat-Sun (1 day) | Covered weekend boundary. |
+| **BR-32** (Young Driver) | `Calculate_DriverAgeBoundary_AppliesYoungDriverSurchargeCorrectly` | 20 (0%), 21 (15%), 24 (15%), 25 (0%) | Exact boundaries 20/21 and 24/25 covered. |
+| **BR-33** (Duration Discount) | `Calculate_RentalDurationDays_AppliesExpectedDurationDiscount` | 6 (0%), 8 (10%), 13 (10%), 14 (15%) | 7 days has a production bug (`> 7` instead of `>= 7`), deferred to Task 10. |
+| **BR-34** (Loyalty Discount) | `Calculate_CustomerLoyaltyTier_AppliesExpectedLoyaltyDiscount` | None (0%), Silver (5%), Gold (10%), Platinum (15%) | All tiers covered. |
+| **BR-35 / BR-36** (Promo Codes) | `Calculate_InvalidPromoCode_ThrowsExpectedExceptionWithMessage` | Missing code, expired date, too few days, wrong vehicle category, max uses reached | All 5 error messages covered via `[ClassData]`. |
+| **BR-37** (25% Discount Cap) | _Pending AI review_ | Cap logic tested implicitly | Need a standalone test for 25% cap combination. |
+| **BR-38** (Insurance) | `Calculate_InsurancePlanAndCategory_CalculatesDailyCost` | Basic (0), Standard (150/day), Premium (300/day); Luxury vehicle doubling | All plan and category combinations covered. |
+| **BR-39** (Additional Drivers) | `Calculate_CustomerTierWithDrivers_CalculatesDriverCost` | None (no free driver), Gold/Platinum (1st driver free) | Silver customer free driver rule has a bug in production (`>= Silver` instead of Gold/Platinum), deferred to Task 10. |
+| **BR-40** (Total Calculation) | `Calculate_WorkedExampleA_ReturnsAccuratePriceBreakdown`<br>`Calculate_WorkedExampleA_MatchesSnapshotOutput` | Full breakdown comparison and Verify snapshot for Worked Example A | Worked Example B deferred to Task 10 due to known bugs in production code. |
+
+#### Bogus Fixed Seed and Test Design (R4):
+- **Why a fixed seed matters for FIRST**: In the FIRST principles, tests must be **Repeatable**. When using Bogus without a seed, values are randomly generated every test run. If a random generator picks an unexpected edge-case date (like Feb 29 or weekend), tests can intermittently fail, causing flakiness. With `UseSeed(42)`, the generated objects are 100% deterministic across any machine.
+- **Where random data is fine**: Non-functional strings and display fields (like `FullName`, `Email`, `PlateNumber`, `Phone`) that are not inspected by business rules.
+- **Where random data is NOT fine**: Boundary fields like `DateOfBirth` (decides the 21–24 young driver surcharge) or `PickupAt` (determines Friday/Saturday weekend surcharge).
+
+#### Snapshot vs Explicit Assertions (R6):
+- **When to use Snapshot (Verify)**: Great for verifying complex, multi-field composite objects like `PriceBreakdown` (Example A) or formatted receipt printouts, where checking each field individually is tedious and prone to missing unexpected side effects.
+- **When to use Explicit Assertions (FluentAssertions)**: Better for focused unit tests targeting single business rules (e.g., checking only that `WeekendSurcharge` is 240.00), because explicit assertions document the intent and make debugging easy when an isolated failure occurs.
+
+**Verdict**:
+I covered the main business rules, individual boundaries, and full Worked Example A with both FluentAssertions and Verify. Known bugs in 7-day duration, Silver free driver, and Worked Example B are identified and deferred to Task 10.
+
+---
+
+### 2. AI Review & Decisions (Steps 3 & 4)
+
+_(To be filled after AI review)_
+
+---
+
+### 3. Judge the AI (Step 5)
+
+_(To be filled after AI review)_
+
+---
+
 ## Feature: BookingService (Task 6)
 
 ## Feature: Pickups, Returns, and Cancellations (Task 7)
