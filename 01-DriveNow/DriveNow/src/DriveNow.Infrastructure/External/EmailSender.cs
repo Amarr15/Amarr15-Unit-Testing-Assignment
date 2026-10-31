@@ -1,6 +1,8 @@
+using DriveNow.Application.Interfaces;
+
 namespace DriveNow.Infrastructure.External;
 
-public class EmailSender
+public class EmailSender : IEmailSender
 {
     public void Send(string to, string subject, string body)
     {

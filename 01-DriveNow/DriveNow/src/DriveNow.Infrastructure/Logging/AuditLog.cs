@@ -1,8 +1,10 @@
+using DriveNow.Application.Interfaces;
+
 namespace DriveNow.Infrastructure.Logging;
 
-public static class AuditLog
+public class AuditLog : IAuditLog
 {
-    public static void Write(string message)
+    public void Write(string message)
     {
         var path = Path.Combine(AppContext.BaseDirectory, "audit.log");
         File.AppendAllText(path, $"[{DateTime.Now:O}] {message}{Environment.NewLine}");

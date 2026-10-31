@@ -1,8 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\DriveNow.Domain\DriveNow.Domain.csproj" />
-    <ProjectReference Include="..\DriveNow.Infrastructure\DriveNow.Infrastructure.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
